@@ -39,5 +39,14 @@ public class MenuEndpoint {
         return response;
     }
 
+    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "getCheapestMealRequest")
+    @ResponsePayload
+    public getCheapestMealResponse getCheapestMeal(@RequestPayload getCheapestMealRequest request) {
+        GetLargestMealResponse response = new GetLargestMealResponse();
+        response.setMeal(mealrepo.findBiggestMeal());
+
+        return response;
+    }
+
 
 }

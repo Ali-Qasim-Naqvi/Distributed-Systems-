@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/Distributed Systems.iml" filepath="$PROJECT_DIR$/.idea/Distributed Systems.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Week 2/ds-1-2-soap/SpringSOAP.iml" filepath="$PROJECT_DIR$/Week 2/ds-1-2-soap/SpringSOAP.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Week 2/ds-1-2-rest/food-rest-service.iml" filepath="$PROJECT_DIR$/Week 2/ds-1-2-rest/food-rest-service.iml" />
+    </modules>
+  </component>
+</project>
