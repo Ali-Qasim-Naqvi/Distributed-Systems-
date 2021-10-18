@@ -43,7 +43,7 @@ public class MenuEndpoint {
     @ResponsePayload
     public GetCheapestMealResponse getCheapestMeal(@RequestPayload GetCheapestMealRequest request) {
         GetCheapestMealResponse response = new GetCheapestMealResponse();
-        response.setMeal(mealrepo.findBiggestMeal()); //Needs to be replaced with new function
+        response.setMeal(mealrepo.findCheapestMeal()); //Needs to be replaced with new function
 
         return response;
     }
@@ -52,7 +52,7 @@ public class MenuEndpoint {
     @ResponsePayload
     public AddOrderResponse addOrder(@RequestPayload AddOrderRequest request) {
         AddOrderResponse response = new AddOrderResponse();
-        response.setOrderConfirmation(mealrepo.findBiggestMeal()); //Needs to be replaced with new function
+        response.setOrderConfirmation(mealrepo.addOrder(request.getOrder())); //Needs to be replaced with new function
 
         return response;
     }

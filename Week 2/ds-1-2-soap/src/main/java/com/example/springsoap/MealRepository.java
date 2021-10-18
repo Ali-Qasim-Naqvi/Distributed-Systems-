@@ -73,15 +73,15 @@ public class MealRepository {
 
     }
 
-    public OrderConfirmation addOrder(Order order){
+    public String addOrder(Order order){
 
         if (order == null) return null;
 
-        map <String, meals[]> orders = new hashMap <String, meals[]> ();
-        orders.put(order::getAddress, order::getMeals);
+        //map <String, meals[]> orders = new hashMap <String, meals[]> ();
+        //orders.put(order::getAddress, order::getMeals);
 
-        if (order::getAddress == null) return "Order not confirmed";
-        if (order::getMeals == null) return "Order not confirmed";
+        if (order.getAddress() == null) return "Order not confirmed";
+        if (order.getMeals() == null) return "Order not confirmed";
         return "Order confirmed";
     }
 }
