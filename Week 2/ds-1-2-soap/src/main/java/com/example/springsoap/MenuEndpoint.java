@@ -41,12 +41,20 @@ public class MenuEndpoint {
 
     @PayloadRoot(namespace = NAMESPACE_URI, localPart = "getCheapestMealRequest")
     @ResponsePayload
-    public getCheapestMealResponse getCheapestMeal(@RequestPayload getCheapestMealRequest request) {
-        GetLargestMealResponse response = new GetLargestMealResponse();
-        response.setMeal(mealrepo.findBiggestMeal());
+    public GetCheapestMealResponse getCheapestMeal(@RequestPayload GetCheapestMealRequest request) {
+        GetCheapestMealResponse response = new GetCheapestMealResponse();
+        response.setMeal(mealrepo.findBiggestMeal()); //Needs to be replaced with new function
 
         return response;
     }
 
+    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "addOrderRequest")
+    @ResponsePayload
+    public AddOrderResponse addOrder(@RequestPayload AddOrderRequest request) {
+        AddOrderResponse response = new AddOrderResponse();
+        response.setOrderConfirmation(mealrepo.findBiggestMeal()); //Needs to be replaced with new function
+
+        return response;
+    }
 
 }
