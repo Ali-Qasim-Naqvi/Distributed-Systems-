@@ -1,20 +1,4 @@
-package com.example.springsoap;
-
-import javax.annotation.PostConstruct;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NoSuchElementException;
-
-
-import io.foodmenu.cs.webservice.*;
-
-
-import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
-
-@Component
-public class MealRepository {
+{
     private static final Map<String, Meal> meals = new HashMap<String, Meal>();
 
     @PostConstruct
