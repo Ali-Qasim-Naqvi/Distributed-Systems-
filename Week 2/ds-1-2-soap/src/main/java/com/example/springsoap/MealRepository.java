@@ -1,4 +1,20 @@
-{
+package com.example.springsoap;
+
+import javax.annotation.PostConstruct;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
+
+
+import io.foodmenu.cs.webservice.*;
+
+
+import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
+
+@Component
+public class MealRepository {
     private static final Map<String, Meal> meals = new HashMap<String, Meal>();
 
     @PostConstruct
@@ -47,5 +63,25 @@
 
     }
 
+    public Meal findCheapestMeal() {
 
+        if (meals == null) return null;
+        if (meals.size() == 0) return null;
+
+        var values = meals.values();
+        return values.stream().min(Comparator.comparing(Meal::getPrice)).orElseThrow(NoSuchElementException::new);
+
+    }
+
+    public OrderConfirmation addOrder(Order order){
+
+        if (order == null) return null;
+
+        map <String, meals[]> orders = new hashMap <String, meals[]> ();
+        orders.put(order::getAddress, order::getMeals);
+
+        if (order::getAddress == null) return "Order not confirmed";
+        if (order::getMeals == null) return "Order not confirmed";
+        return "Order confirmed";
+    }
 }
