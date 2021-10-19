@@ -24,6 +24,7 @@ public class MealRepository {
         a.setName("Steak");
         a.setDescription("Steak with fries");
         a.setMealtype(Mealtype.MEAT);
+        a.setPrice(25);
         a.setKcal(1100);
 
 
@@ -33,6 +34,7 @@ public class MealRepository {
         b.setName("Portobello");
         b.setDescription("Portobello Mushroom Burger");
         b.setMealtype(Mealtype.VEGAN);
+        b.setPrice(15);
         b.setKcal(637);
 
 
@@ -42,6 +44,7 @@ public class MealRepository {
         c.setName("Fish and Chips");
         c.setDescription("Fried fish with chips");
         c.setMealtype(Mealtype.FISH);
+        c.setPrice(12);
         c.setKcal(950);
 
 

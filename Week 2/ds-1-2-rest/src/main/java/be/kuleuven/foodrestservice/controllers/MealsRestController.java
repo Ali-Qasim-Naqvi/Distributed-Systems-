@@ -29,6 +29,35 @@ public class MealsRestController {
         return mealToEntityModel(id, meal);
     }
 
+    @GetMapping("/rest/meals/biggestmeal")
+    EntityModel<Meal> getBiggestMeal() {
+        Meal meal = mealsRepository.findBiggestMeal().orElseThrow(() -> new MealNotFoundException("No biggest meal"));
+
+        return mealToEntityModel(meal.getId(), meal);
+    }
+
+    @GetMapping("/rest/meals/cheapestmeal")
+    EntityModel<Meal> getCheapestMeal() {
+        Meal meal = mealsRepository.findCheapestMeal().orElseThrow(() -> new MealNotFoundException("No cheapest meal"));
+
+        return mealToEntityModel(meal.getId(), meal);
+    }
+
+    @PostMapping("/rest/meals/addmeal")
+    void addMeal(@RequestBody String name, @RequestBody String description,@RequestBody String mealType, @RequestBody int kcal, @RequestBody double price ){
+        mealsRepository.addNewMeal(name,description,mealType,kcal,price);
+    }
+
+    @PutMapping("/rest/meals/updatemeal")
+    void updateMeal(@RequestBody String id, @RequestBody String name, @RequestBody String description,@RequestBody String mealType, @RequestBody int kcal, @RequestBody double price ){
+        mealsRepository.updateExistingMeal(id,name,description,mealType,kcal,price);
+    }
+
+    @DeleteMapping("/rest/meals/deletemeal")
+    void deleteMeal(@RequestBody String id){
+        mealsRepository.deleteExistingMeal(id);
+    }
+
     @GetMapping("/rest/meals")
     CollectionModel<EntityModel<Meal>> getMeals() {
         Collection<Meal> meals = mealsRepository.getAllMeal();

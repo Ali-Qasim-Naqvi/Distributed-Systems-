@@ -65,7 +65,7 @@
     <xs:complexType name="order">
         <xs:sequence>
             <xs:element name="address" type="xs:string"/>
-            <xs:element maxOccurs="unbounded" name="meals" type="tns:mealtype"/>
+            <xs:element maxOccurs="unbounded" name="meals" type="tns:meal"/>
         </xs:sequence>
     </xs:complexType>
 

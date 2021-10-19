@@ -54,4 +54,46 @@ public class MealsRepository {
     public Collection<Meal> getAllMeal() {
         return meals.values();
     }
+
+    public Optional<Meal> findBiggestMeal() {
+
+        if (meals == null) return null;
+        if (meals.size() == 0) return null;
+
+        var values = meals.values();
+        return Optional.ofNullable(values.stream().max(Comparator.comparing(Meal::getKcal)).orElseThrow(NoSuchElementException::new));
+    }
+
+    public Optional<Meal> findCheapestMeal() {
+
+        if (meals == null) return null;
+        if (meals.size() == 0) return null;
+
+        var values = meals.values();
+        return Optional.ofNullable(values.stream().min(Comparator.comparing(Meal::getPrice)).orElseThrow(NoSuchElementException::new));
+    }
+
+    public void addNewMeal(String name, String description, String mealType, int kcal, double price){
+        Meal newMeal = new Meal();
+        String uniqueID = UUID.randomUUID().toString();
+        newMeal.setId(uniqueID);
+        newMeal.setName(name);
+        newMeal.setDescription(description);
+        newMeal.setMealType(MealType.valueOf(mealType));
+        newMeal.setKcal(kcal);
+        newMeal.setPrice(price);
+        meals.put(newMeal.getId(), newMeal);
+    }
+
+    public void updateExistingMeal(String id, String name, String description, String mealType, int kcal, double price){
+        meals.get(id).setName(name);
+        meals.get(id).setDescription(description);
+        meals.get(id).setMealType(MealType.valueOf(mealType));
+        meals.get(id).setKcal(kcal);
+        meals.get(id).setPrice(price);
+    }
+
+    public void deleteExistingMeal(String id){
+        meals.remove(id);
+    }
 }
