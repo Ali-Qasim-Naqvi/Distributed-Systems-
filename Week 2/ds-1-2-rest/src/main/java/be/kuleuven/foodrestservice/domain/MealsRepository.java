@@ -85,12 +85,13 @@ public class MealsRepository {
         meals.put(newMeal.getId(), newMeal);
     }
 
-    public void updateExistingMeal(String id, String name, String description, String mealType, int kcal, double price){
-        meals.get(id).setName(name);
-        meals.get(id).setDescription(description);
-        meals.get(id).setMealType(MealType.valueOf(mealType));
-        meals.get(id).setKcal(kcal);
-        meals.get(id).setPrice(price);
+    public void updateExistingMeal(Meal meal){
+        meals.get(meal.getId()).setName(meal.getName());
+        meals.get(meal.getId()).setDescription(meal.getDescription());
+        meals.get(meal.getId()).setMealType(meal.getMealType());
+        meals.get(meal.getId()).setKcal(meal.getKcal());
+        meals.get(meal.getId()).setPrice(meal.getPrice());
+        System.out.println("Update meal completed");
     }
 
     public void deleteExistingMeal(String id){

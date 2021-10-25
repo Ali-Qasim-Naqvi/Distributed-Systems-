@@ -44,17 +44,19 @@ public class MealsRestController {
     }
 
     @PostMapping("/rest/meals/addmeal")
-    void addMeal(@RequestBody String name, @RequestBody String description,@RequestBody String mealType, @RequestBody int kcal, @RequestBody double price ){
+    void addMeal(@RequestParam String name, @RequestParam String description,@RequestParam String mealType, @RequestParam int kcal, @RequestParam double price ){
         mealsRepository.addNewMeal(name,description,mealType,kcal,price);
     }
 
-    @PutMapping("/rest/meals/updatemeal")
-    void updateMeal(@RequestBody String id, @RequestBody String name, @RequestBody String description,@RequestBody String mealType, @RequestBody int kcal, @RequestBody double price ){
-        mealsRepository.updateExistingMeal(id,name,description,mealType,kcal,price);
+    @PostMapping("/rest/meals/updatemeal")
+    void updateMeal(@RequestBody Meal meal){
+        System.out.println("Updating Meal");
+        mealsRepository.updateExistingMeal(meal);
     }
 
     @DeleteMapping("/rest/meals/deletemeal")
-    void deleteMeal(@RequestBody String id){
+    void deleteMeal(@RequestParam String id){
+        System.out.println("Delete called");
         mealsRepository.deleteExistingMeal(id);
     }
 

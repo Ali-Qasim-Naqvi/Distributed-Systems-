@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collection;
 import java.util.Optional;
 
+import static ch.qos.logback.core.joran.spi.ConsoleTarget.SystemOut;
+
 @RestController
 public class MealsRestRpcStyleController {
 
@@ -46,17 +48,18 @@ public class MealsRestRpcStyleController {
     }
 
     @PostMapping("/restrpc/meals/addmeal")
-    void addMeal(@RequestBody String name, @RequestBody String description,@RequestBody String mealType, @RequestBody int kcal, @RequestBody double price ){
+    void addMeal(@RequestParam String name, @RequestParam String description,@RequestParam String mealType, @RequestParam int kcal, @RequestParam double price ){
         mealsRepository.addNewMeal(name,description,mealType,kcal,price);
     }
 
     @PutMapping("/restrpc/meals/updatemeal")
-    void updateMeal(@RequestBody String id, @RequestBody String name, @RequestBody String description,@RequestBody String mealType, @RequestBody int kcal, @RequestBody double price ){
-        mealsRepository.updateExistingMeal(id,name,description,mealType,kcal,price);
+    void updateMeal(@RequestBody Meal meal){
+        mealsRepository.updateExistingMeal(meal);
     }
 
     @DeleteMapping("/restrpc/meals/deletemeal")
-    void deleteMeal(@RequestBody String id){
+    void deleteMeal(@RequestParam String id){
+        System.out.println("Delete called");
         mealsRepository.deleteExistingMeal(id);
     }
 }
