@@ -29,13 +29,18 @@ public class AlmaOnlineClientGrpcAdapter implements AlmaOnlineClientAdapter {
     // createDineInOrder should create the given dine-in order at the AlmaOnline server
     @Override
     public ListenableFuture<?> createDineInOrder(AlmaOnlineGrpc.AlmaOnlineFutureStub stub, DineInOrderQuote order) {
-        return null;
+        long reservationDate = order.getReservationDate().getTime();
+        DineInOrderQuoteRequest dineInOrderQuote = DineInOrderQuoteRequest.newBuilder().setrestaurantId(order.getRestaurantId()).setorderId(order.getOrderId()).setcustomer(order.getCustomer()).setitems(order.getItems()).setreservationDate(reservationDate).build();
+        EmptyAck emptyAck = stub.createDineInOrder(dineInOrderQuote);
+        return emptyAck;
     }
 
     // createDeliveryOrder should create the given delivery order at the AlmaOnline server
     @Override
     public ListenableFuture<?> createDeliveryOrder(AlmaOnlineGrpc.AlmaOnlineFutureStub stub, DeliveryOrder order) {
-        return null;
+        DeliveryOrderRequest deliveryOrder = DeliveryOrderRequest.newBuilder().setrestaurantId(order.getRestaurantId()).setorderId(order.getOrderId()).setcustomer(order.getCustomer()).setitems(order.getItems()).setdeliveryAddress(order.getDeliveryAddress()).build();
+        EmptyAck emptyAck = stub.createDeliveryOrder(deliveryOrder);
+        return emptyAck;
     }
 
     // getOrder should retrieve the order information at the AlmaOnline server given the restaurant the order is
@@ -44,9 +49,9 @@ public class AlmaOnlineClientGrpcAdapter implements AlmaOnlineClientAdapter {
     public BaseOrderInfo getOrder(AlmaOnlineGrpc.AlmaOnlineBlockingStub stub, String restaurantId, String orderId) {
         GetOrderRequest getOrderRequest = GetOrderRequest.newBuilder().setrestaurantId(restaurantId).setorderId(orderId).build();
         BaseOrderInfoResponse baseOrderInfoResponse = stub.getOrder(getOrderRequest);
-        BaseOrderInfo baseOrderInfo = new BaseOrderInfo(baseOrderInfoResponse);
-        return menuInfo;
-        return null;
+        Date createDate = new java.util.Date(baseOrderInfoResponse.getcreateDate());
+        BaseOrderInfo baseOrderInfo = new BaseOrderInfo(baseOrderInfoResponse.getcustomer(),createDate,baseOrderInfoResponse.getitems());
+        return baseOrderInfo;
     }
 
     // getScript returns the script the application will run during testing.

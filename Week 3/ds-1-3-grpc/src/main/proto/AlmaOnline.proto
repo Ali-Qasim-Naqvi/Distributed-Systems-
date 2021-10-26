@@ -18,10 +18,10 @@ message DeliveryOrderRequest{
 }
 
 message DineInOrderQuoteRequest{
-  string id = 1;
-  int64 creationDate = 2;
+  string restaurantId = 1;
+  int64 orderId = 2;
   string customer = 3;
-  repeated string lineItems = 4;
+  repeated string items = 4;
   int64 reservationDate = 5;
 }
 
@@ -37,13 +37,9 @@ message RestaurantIdRequest{
   string id = 1;
 }
 
-message OrderId{
-  string id = 1;
-}
-
 message GetOrderRequest{
-  RestaurantIdRequest restaurantId = 1;
-  OrderId orderId = 2;
+  string restaurantId = 1;
+  string orderId = 2;
 }
 
 message MenuInfoResponse{

@@ -27,4 +27,47 @@ public class AlmaOnlineServerGrpcAdapter extends AlmaOnlineGrpc.AlmaOnlineImplBa
     }
 
     // -- Put the code for your implementation down below -- //
+    @Override
+    public void getRestaurants(EmptyAck request, StreamObserver<ListOfRestaurantInfoResponse> responseObserver) {
+        List <Restaurant> restaurants = new List<Restaurant>(service.getRestaurants());
+        RestaurantInfo restaurantInfo = RestaurantInfo.newBuilder();
+        ListOfRestaurantInfoResponse listOfRestaurantInfoResponse = ListOfRestaurantInfoResponse.newBuilder();
+        for (Restaurant restaurant:restaurants){
+            restaurantInfo.setid(restaurant.getId()).setname(restaurant.getName());
+            restaurantInfo.build();
+            listOfRestaurantInfoResponse.addlistOfRestaurantInfo(restaurantInfo);
+        }
+        listOfRestaurantInfoResponse.build();
+        responseObserver.onNext(listOfRestaurantInfoResponse);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getMenu(RestaurantIdRequest request, StreamObserver<MenuInfoResponse> responseObserver) {
+        map<String,double> menuItems = new map<String,double> ();
+        for (var entry : service.getRestaurantMenu(request.getid())) {
+            menuItems.put(entry.getValue().getName(),entry.getValue().getPrice());
+        }
+        MenuInfoResponse menuInfoResponse = MenuInfoResponse.newBuilder().setitems(menuItems).build();
+        responseObserver.onNext(menuInfoResponse);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void getOrder(GetOrderRequest request, StreamObserver<BaseOrderInfoResponse> responseObserver) {
+        Order customerOrder = service.getOrder(request.getrestaurantId(),request.getorderId());
+        long createDate = customerOrder.getCreationDate().getTime();
+        BaseOrderInfoResponse baseOrderInfoResponse = BaseOrderInfoResponse.newBuilder().setcustomer(customerOrder.getCustomer()).setcreateDate(createDate).setitems(customerOrder.getItems()).build();
+        responseObserver.onNext(baseOrderInfoResponse);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void createDineInOrder(DineInOrderQuoteRequest request, StreamObserver<EmptyAck> responseObserver) {
+        Date reservationDate = new java.util.Date(request.);
+
+        DineInOrderQuote dineInOrderQuote = new DineInOrderQuote()
+        responseObserver.onNext(service.createDineInOrder(request.getrestaurantId(),request.getorderId()));
+        responseObserver.onCompleted();
+    }
 }
