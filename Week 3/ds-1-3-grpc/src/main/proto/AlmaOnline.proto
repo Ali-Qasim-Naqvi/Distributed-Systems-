@@ -9,4 +9,67 @@ option objc_class_prefix = "AO";
 
 package almaonline;
 
-service AlmaOnline {}
+message DeliveryOrderRequest{
+  string restaurantId = 1;
+  int64 orderId = 2;
+  string customer = 3;
+  repeated string items = 4;
+  string deliveryAddress = 5;
+}
+
+message DineInOrderQuoteRequest{
+  string id = 1;
+  int64 creationDate = 2;
+  string customer = 3;
+  repeated string lineItems = 4;
+  int64 reservationDate = 5;
+}
+
+message ListOfRestaurantInfoResponse{
+  repeated RestaurantInfo listOfRestaurantInfo = 1;
+}
+message RestaurantInfo{
+  string id = 1;
+  string name = 2;
+}
+
+message RestaurantIdRequest{
+  string id = 1;
+}
+
+message OrderId{
+  string id = 1;
+}
+
+message GetOrderRequest{
+  RestaurantIdRequest restaurantId = 1;
+  OrderId orderId = 2;
+}
+
+message MenuInfoResponse{
+  map<string,double> items = 1;
+}
+
+message BaseOrderInfoResponse{
+  string customer = 1;
+  int64 createDate = 2;
+  repeated ItemInfo items= 3;
+}
+
+message ItemInfo{
+  string name = 1;
+  double price = 2;
+}
+
+message EmptyAck{
+
+}
+
+service AlmaOnline {
+
+rpc getRestaurants(EmptyAck) returns (ListOfRestaurantInfoResponse) {}
+rpc getMenu(RestaurantIdRequest) returns (MenuInfoResponse) {}
+rpc getOrder(GetOrderRequest) returns (BaseOrderInfoResponse) {}
+rpc createDineInOrder(DineInOrderQuoteRequest) returns (EmptyAck) {}
+rpc createDeliveryOrder(DeliveryOrderRequest) returns (EmptyAck) {}
+}

@@ -7,10 +7,12 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="food-rest-service" />
+        <module name="AlmaOnline" />
         <module name="SpringSOAP" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="AlmaOnline" target="11" />
       <module name="food-rest-service" target="11" />
       <module name="SpringSOAP" target="11" />
     </bytecodeTargetLevel>
