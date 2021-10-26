@@ -42,6 +42,10 @@ public class AlmaOnlineClientGrpcAdapter implements AlmaOnlineClientAdapter {
     // placed at and the id of the order.
     @Override
     public BaseOrderInfo getOrder(AlmaOnlineGrpc.AlmaOnlineBlockingStub stub, String restaurantId, String orderId) {
+        GetOrderRequest getOrderRequest = GetOrderRequest.newBuilder().setrestaurantId(restaurantId).setorderId(orderId).build();
+        BaseOrderInfoResponse baseOrderInfoResponse = stub.getOrder(getOrderRequest);
+        BaseOrderInfo baseOrderInfo = new BaseOrderInfo(baseOrderInfoResponse);
+        return menuInfo;
         return null;
     }
 
