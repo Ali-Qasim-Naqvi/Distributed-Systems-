@@ -64,9 +64,9 @@ public class AlmaOnlineServerGrpcAdapter extends AlmaOnlineGrpc.AlmaOnlineImplBa
 
     @Override
     public void createDineInOrder(DineInOrderQuoteRequest request, StreamObserver<EmptyAck> responseObserver) {
-        Date reservationDate = new java.util.Date(request.);
+        Date reservationDate = new java.util.Date(request.getreservationDate());
 
-        DineInOrderQuote dineInOrderQuote = new DineInOrderQuote()
+        //DineInOrderQuote dineInOrderQuote = new DineInOrderQuote()
         responseObserver.onNext(service.createDineInOrder(request.getrestaurantId(),request.getorderId()));
         responseObserver.onCompleted();
     }

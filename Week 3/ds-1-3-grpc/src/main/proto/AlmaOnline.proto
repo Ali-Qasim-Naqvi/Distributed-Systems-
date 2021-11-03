@@ -11,7 +11,7 @@ package almaonline;
 
 message DeliveryOrderRequest{
   string restaurantId = 1;
-  int64 orderId = 2;
+  string orderId = 2;
   string customer = 3;
   repeated string items = 4;
   string deliveryAddress = 5;
@@ -19,7 +19,7 @@ message DeliveryOrderRequest{
 
 message DineInOrderQuoteRequest{
   string restaurantId = 1;
-  int64 orderId = 2;
+  string orderId = 2;
   string customer = 3;
   repeated string items = 4;
   int64 reservationDate = 5;
