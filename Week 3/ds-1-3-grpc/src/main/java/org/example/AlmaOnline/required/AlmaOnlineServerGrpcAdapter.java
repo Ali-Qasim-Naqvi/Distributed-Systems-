@@ -1,6 +1,7 @@
 package org.example.AlmaOnline.required;
 
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Timestamp;
 import io.grpc.stub.StreamObserver;
 import org.example.AlmaOnline.defaults.Initializer;
@@ -29,45 +30,63 @@ public class AlmaOnlineServerGrpcAdapter extends AlmaOnlineGrpc.AlmaOnlineImplBa
     // -- Put the code for your implementation down below -- //
     @Override
     public void getRestaurants(EmptyAck request, StreamObserver<ListOfRestaurantInfoResponse> responseObserver) {
-        List <Restaurant> restaurants = new List<Restaurant>(service.getRestaurants());
-        RestaurantInfo restaurantInfo = RestaurantInfo.newBuilder();
-        ListOfRestaurantInfoResponse listOfRestaurantInfoResponse = ListOfRestaurantInfoResponse.newBuilder();
-        for (Restaurant restaurant:restaurants){
-            restaurantInfo.setid(restaurant.getId()).setname(restaurant.getName());
+        List <Restaurant> restaurants = new ArrayList<>(service.getRestaurants());
+        ListOfRestaurantInfoResponse.Builder listOfRestaurantInfoResponse = ListOfRestaurantInfoResponse.newBuilder();
+        for (Restaurant entry:restaurants){
+            RestaurantInfo.Builder restaurantInfo = RestaurantInfo.newBuilder();
+            restaurantInfo.setId(entry.getId()).setName(entry.getName());
             restaurantInfo.build();
-            listOfRestaurantInfoResponse.addlistOfRestaurantInfo(restaurantInfo);
+            listOfRestaurantInfoResponse.addListOfRestaurantInfo(restaurantInfo);
         }
-        listOfRestaurantInfoResponse.build();
-        responseObserver.onNext(listOfRestaurantInfoResponse);
+        ListOfRestaurantInfoResponse listOfRestaurantInfoResponse1 = listOfRestaurantInfoResponse.build();
+        responseObserver.onNext(listOfRestaurantInfoResponse1);
         responseObserver.onCompleted();
     }
 
     @Override
     public void getMenu(RestaurantIdRequest request, StreamObserver<MenuInfoResponse> responseObserver) {
-        map<String,double> menuItems = new map<String,double> ();
-        for (var entry : service.getRestaurantMenu(request.getid())) {
-            menuItems.put(entry.getValue().getName(),entry.getValue().getPrice());
+        Map<String, Double> menuItems = new HashMap<String, Double>();
+        for (var entry :  service.getRestaurantMenu(request.getId()).get().getItems()) {
+            menuItems.put(entry.getName(),entry.getPrice());
         }
-        MenuInfoResponse menuInfoResponse = MenuInfoResponse.newBuilder().setitems(menuItems).build();
+        MenuInfoResponse menuInfoResponse = MenuInfoResponse.newBuilder().putAllItems(menuItems).build();
         responseObserver.onNext(menuInfoResponse);
         responseObserver.onCompleted();
     }
 
     @Override
-    public void getOrder(GetOrderRequest request, StreamObserver<BaseOrderInfoResponse> responseObserver) {
-        Order customerOrder = service.getOrder(request.getrestaurantId(),request.getorderId());
+    public void getOrder(GetOrderRequest request, StreamObserver<BaseOrderInfoResponse> responseObserver) throws InvalidProtocolBufferException {
+        Order customerOrder = service.getOrder(request.getRestaurantId(),request.getOrderId()).get();
         long createDate = customerOrder.getCreationDate().getTime();
-        BaseOrderInfoResponse baseOrderInfoResponse = BaseOrderInfoResponse.newBuilder().setcustomer(customerOrder.getCustomer()).setcreateDate(createDate).setitems(customerOrder.getItems()).build();
+        List<Item> items = new ArrayList<Item>(customerOrder.getItems());
+        List<ItemInfo> itemInfos = new ArrayList<ItemInfo>();
+        for (var entry : items){
+            ItemInfo itemInfoTemp = ItemInfo.newBuilder().setName(entry.getName()).setPrice(entry.getPrice()).build();
+            itemInfos.add(itemInfoTemp);
+        }
+        BaseOrderInfoResponse baseOrderInfoResponse = BaseOrderInfoResponse.newBuilder().setCustomer(customerOrder.getCustomer()).setCreateDate(createDate).addAllItems(itemInfos).build();
         responseObserver.onNext(baseOrderInfoResponse);
         responseObserver.onCompleted();
     }
 
     @Override
-    public void createDineInOrder(DineInOrderQuoteRequest request, StreamObserver<EmptyAck> responseObserver) {
-        Date reservationDate = new java.util.Date(request.getreservationDate());
+    public void createDineInOrder(DineInOrderQuoteRequest request, StreamObserver<EmptyAck> responseObserver) throws OrderException {
+        Date reservationDate = new java.util.Date(request.getReservationDate());
+        Date currentDate = new java.util.Date();
+        DineInOrderQuote dineInOrderQuote = new DineInOrderQuote(request.getOrderId(),currentDate,request.getCustomer(),request.getItemsList(),reservationDate);
+        service.createDineInOrder(request.getRestaurantId(),dineInOrderQuote);
+        EmptyAck emptyAck = EmptyAck.newBuilder().build();
+        responseObserver.onNext(emptyAck);
+        responseObserver.onCompleted();
+    }
 
-        //DineInOrderQuote dineInOrderQuote = new DineInOrderQuote()
-        responseObserver.onNext(service.createDineInOrder(request.getrestaurantId(),request.getorderId()));
+    @Override
+    public void createDeliveryOrder(DeliveryOrderRequest request, StreamObserver<EmptyAck> responseObserver) throws OrderException {
+        Date currentDate = new java.util.Date();
+        DeliveryOrderQuote deliveryOrderQuote = new DeliveryOrderQuote(request.getOrderId(),currentDate, request.getCustomer(), request.getItemsList(), request.getDeliveryAddress());
+        service.createDeliveryOrder(request.getRestaurantId(),deliveryOrderQuote);
+        EmptyAck emptyAck = EmptyAck.newBuilder().build();
+        responseObserver.onNext(emptyAck);
         responseObserver.onCompleted();
     }
 }

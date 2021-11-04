@@ -1,5 +1,7 @@
 package org.example.AlmaOnline.provided.service;
 
+import org.example.AlmaOnline.server.ItemInfo;
+
 import java.util.*;
 
 public abstract class Order {

@@ -17,7 +17,7 @@ public class AlmaOnlineClientGrpcAdapter implements AlmaOnlineClientAdapter {
     public List<RestaurantInfo> getRestaurants(AlmaOnlineGrpc.AlmaOnlineBlockingStub stub) {
         EmptyAck emptyAck = EmptyAck.newBuilder().build();
         ListOfRestaurantInfoResponse listOfRestaurantInfoResponse = stub.getRestaurants(emptyAck);
-        List<RestaurantInfo> restaurantInfo = new ArrayList<RestaurantInfo>();
+        List<RestaurantInfo> restaurantInfo = new ArrayList<>();
         for (org.example.AlmaOnline.server.RestaurantInfo entry : listOfRestaurantInfoResponse.getListOfRestaurantInfoList()) {
             RestaurantInfo restaurantInfoTemp = new RestaurantInfo(entry.getId(), entry.getName());
             restaurantInfo.add(restaurantInfoTemp);
@@ -60,10 +60,10 @@ public class AlmaOnlineClientGrpcAdapter implements AlmaOnlineClientAdapter {
         Date createDate = new java.util.Date(baseOrderInfoResponse.getCreateDate());
         List<ItemInfo> itemInfo = new ArrayList<ItemInfo>();
         for (org.example.AlmaOnline.server.ItemInfo entry : baseOrderInfoResponse.getItemsList()) {
-            RestaurantInfo restaurantInfoTemp = new RestaurantInfo(entry.getId(), entry.getName());
-            restaurantInfo.add(restaurantInfoTemp);
+            ItemInfo itemInfoTemp = new ItemInfo(entry.getName(),entry.getPrice());
+            itemInfo.add(itemInfoTemp);
         }
-        BaseOrderInfo baseOrderInfo = new BaseOrderInfo(baseOrderInfoResponse.getCustomer(),createDate,);
+        BaseOrderInfo baseOrderInfo = new BaseOrderInfo(baseOrderInfoResponse.getCustomer(),createDate,itemInfo);
         return baseOrderInfo;
     }
 
