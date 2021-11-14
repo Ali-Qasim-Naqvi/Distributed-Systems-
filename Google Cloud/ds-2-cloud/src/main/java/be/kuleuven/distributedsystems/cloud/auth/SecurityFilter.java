@@ -1,6 +1,11 @@
 package be.kuleuven.distributedsystems.cloud.auth;
 
 import be.kuleuven.distributedsystems.cloud.entities.User;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.exceptions.JWTDecodeException;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import net.minidev.json.JSONObject;
+import net.minidev.json.JSONValue;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -15,10 +20,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 @Component
 public class SecurityFilter extends OncePerRequestFilter {
@@ -29,7 +31,25 @@ public class SecurityFilter extends OncePerRequestFilter {
         if (session != null) {
             // TODO: (level 1) decode Identity Token and assign correct email and role
             // TODO: (level 2) verify Identity Token
-            var user = new User("test@example.com", "");
+            System.out.println("HTTP Request is : " + request.getScheme());
+            String email = null;
+            String role = null;
+            try {
+                String[] parts = session.getValue().split("\\.");
+                Base64.Decoder decoder = Base64.getDecoder();
+                String header = new String(decoder.decode(parts[0]));
+                String payload = new String(decoder.decode(parts[1]));
+                Object obj= JSONValue.parse(payload);
+                JSONObject jsonObject = (JSONObject) obj;
+                email = (String) jsonObject.get("email");
+                role = (String) jsonObject.get("role");
+                System.out.println("Email is : " + email);
+                System.out.println("Role is : " + role);
+
+            } catch (JWTDecodeException exception){
+                System.out.println("Invlaid Token");
+            }
+            var user = new User(email, role);
 
             SecurityContext context = SecurityContextHolder.getContext();
             context.setAuthentication(new FirebaseAuthentication(user));

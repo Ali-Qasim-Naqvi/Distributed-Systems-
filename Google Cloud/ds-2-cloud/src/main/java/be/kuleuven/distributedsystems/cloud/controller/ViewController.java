@@ -148,8 +148,9 @@ public class ViewController {
     @GetMapping("/manager")
     public ModelAndView viewManager(
             @CookieValue(value = "cart", required = false) String cartString) throws Exception {
-        // TODO: limit this function to managers
-
+        if(!AuthController.getUser().isManager()){
+            return null;
+        }
         List<Quote> quotes = Cart.fromCookie(cartString);
         ModelAndView modelAndView = new ModelAndView("manager");
         modelAndView.addObject("cartLength",
