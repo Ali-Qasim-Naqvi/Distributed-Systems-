@@ -36,7 +36,7 @@ public class Model {
                                     .bodyToMono(new ParameterizedTypeReference<CollectionModel<Show>>() {})
                                     .block()
                                     .getContent();
-        return shows.stream().collect(toCollection(ArrayList::new));
+        return new ArrayList<>(shows);
     }
 
     public Show getShow(String company, UUID showId) {
@@ -67,7 +67,7 @@ public class Model {
                 .bodyToMono(new ParameterizedTypeReference<CollectionModel<LocalDateTime>>() {})
                 .block()
                 .getContent();
-        return showTimes.stream().collect(toCollection(ArrayList::new));
+        return new ArrayList<>(showTimes);
     }
 
     public List<Seat> getAvailableSeats(String company, UUID showId, LocalDateTime time) {
@@ -86,7 +86,7 @@ public class Model {
                 .bodyToMono(new ParameterizedTypeReference<CollectionModel<Seat>>() {})
                 .block()
                 .getContent();
-        return seats.stream().collect(toCollection(ArrayList::new));
+        return new ArrayList<>(seats);
     }
 
     public Seat getSeat(String company, UUID showId, UUID seatId) {
