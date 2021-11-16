@@ -14,11 +14,14 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toCollection;
 
 @Component
 public class Model {
+    private List<Booking> bookings = new ArrayList<>();
     String API_KEY = "wCIoTqec6vGJijW2meeqSokanZuqOL";
     String baseURL = "https://reliabletheatrecompany.com/";
     @Autowired WebClient.Builder webClientBuilder;
@@ -71,7 +74,6 @@ public class Model {
     }
 
     public List<Seat> getAvailableSeats(String company, UUID showId, LocalDateTime time) {
-        // TODO: return all available seats for a given show and time
         var seats = webClientBuilder
                 .baseUrl("https://"+company)
                 .build()
@@ -105,7 +107,6 @@ public class Model {
     }
 
     public Ticket getTicket(String company, UUID showId, UUID seatId) {
-        // TODO: return the ticket for the given seat
         var ticket = webClientBuilder
                 .baseUrl("https://"+company)
                 .build()
@@ -121,21 +122,55 @@ public class Model {
     }
 
     public List<Booking> getBookings(String customer) {
-        // TODO: return all bookings from the customer
-        return new ArrayList<>();
+        List<Booking> bookingList = bookings.stream().filter(booking -> booking.getCustomer().equals(customer)).collect(Collectors.toList());
+        return bookingList;
     }
 
     public List<Booking> getAllBookings() {
-        // TODO: return all bookings
-        return new ArrayList<>();
+        return bookings;
     }
 
     public Set<String> getBestCustomers() {
-        // TODO: return the best customer (highest number of tickets, return all of them if multiple customers have an equal amount)
-        return null;
+        Map<String, Integer> customerBookings = new HashMap<String, Integer>();
+        for(var entry:bookings){
+            customerBookings.put(entry.getCustomer(),0);
+        }
+        for(var entry:bookings){
+            customerBookings.put(entry.getCustomer(),customerBookings.get(entry.getCustomer()) + entry.getTickets().size());
+        }
+        Integer largestVal = null;
+        Set<String> customers = new HashSet<>();
+        for (Map.Entry<String, Integer> i : customerBookings.entrySet()){
+            if (largestVal == null || largestVal  < i.getValue()){
+                largestVal = i.getValue();
+                customers.clear();
+                customers.add(i.getKey());
+            }else if (largestVal == i.getValue()){
+                customers.add(i.getKey());
+            }
+        }
+//        Stream<Map.Entry<String, Integer>> customerBookings2 = customerBookings.entrySet().stream().filter(customer -> customer.getValue().equals(Collections.max(customerBookings.values())));
+//        Set<String> customers = customerBookings2.keySet();
+        return customers;
     }
 
     public void confirmQuotes(List<Quote> quotes, String customer) {
-        // TODO: reserve all seats for the given quotes
+        List<Ticket> tickets = new ArrayList<>();
+        for(var quote:quotes){
+            tickets.add(webClientBuilder
+                    .baseUrl("https://" + quote.getCompany())
+                    .build()
+                    .put()
+                    .uri(uriBuilder -> uriBuilder
+                            .pathSegment("shows",quote.getShowId().toString(),"seats", quote.getSeatId().toString(), "ticket")
+                            .queryParam("customer",customer)
+                            .queryParam("key",API_KEY)
+                            .build())
+                    .retrieve()
+                    .bodyToMono(new ParameterizedTypeReference<Ticket>() {})
+                    .block());
+        }
+        Booking tempBooking = new Booking(UUID.randomUUID(), LocalDateTime.now(),tickets,customer);
+        bookings.add(tempBooking);
     }
 }
