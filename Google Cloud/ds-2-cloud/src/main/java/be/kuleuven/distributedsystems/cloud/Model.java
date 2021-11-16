@@ -90,13 +90,34 @@ public class Model {
     }
 
     public Seat getSeat(String company, UUID showId, UUID seatId) {
-        // TODO: return the given seat
-        return null;
+        var seat = webClientBuilder
+                .baseUrl("https://"+company)
+                .build()
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .pathSegment("shows",showId.toString(),"seats", seatId.toString())
+                        .queryParam("key",API_KEY)
+                        .build())
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Seat>() {})
+                .block();
+        return seat;
     }
 
     public Ticket getTicket(String company, UUID showId, UUID seatId) {
         // TODO: return the ticket for the given seat
-        return null;
+        var ticket = webClientBuilder
+                .baseUrl("https://"+company)
+                .build()
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .pathSegment("shows",showId.toString(),"seats", seatId.toString(), "ticket")
+                        .queryParam("key",API_KEY)
+                        .build())
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Ticket>() {})
+                .block();
+        return ticket;
     }
 
     public List<Booking> getBookings(String customer) {

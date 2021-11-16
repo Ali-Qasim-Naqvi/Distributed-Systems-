@@ -29,7 +29,6 @@ public class SecurityFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         var session = WebUtils.getCookie(request, "session");
         if (session != null) {
-            // TODO: (level 1) decode Identity Token and assign correct email and role
             // TODO: (level 2) verify Identity Token
 //            System.out.println("HTTP Request is : " + request.getScheme());
             String email = null;
