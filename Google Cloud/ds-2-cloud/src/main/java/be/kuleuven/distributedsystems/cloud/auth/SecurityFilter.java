@@ -31,7 +31,7 @@ public class SecurityFilter extends OncePerRequestFilter {
         if (session != null) {
             // TODO: (level 1) decode Identity Token and assign correct email and role
             // TODO: (level 2) verify Identity Token
-            System.out.println("HTTP Request is : " + request.getScheme());
+//            System.out.println("HTTP Request is : " + request.getScheme());
             String email = null;
             String role = null;
             try {
@@ -43,8 +43,8 @@ public class SecurityFilter extends OncePerRequestFilter {
                 JSONObject jsonObject = (JSONObject) obj;
                 email = (String) jsonObject.get("email");
                 role = (String) jsonObject.get("role");
-                System.out.println("Email is : " + email);
-                System.out.println("Role is : " + role);
+//                System.out.println("Email is : " + email);
+//                System.out.println("Role is : " + role);
 
             } catch (JWTDecodeException exception){
                 System.out.println("Invlaid Token");

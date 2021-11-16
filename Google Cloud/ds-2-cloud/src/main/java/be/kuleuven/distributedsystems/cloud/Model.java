@@ -1,32 +1,92 @@
 package be.kuleuven.distributedsystems.cloud;
 
 import be.kuleuven.distributedsystems.cloud.entities.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cglib.core.Local;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static java.util.stream.Collectors.toCollection;
+
 @Component
 public class Model {
+    String API_KEY = "wCIoTqec6vGJijW2meeqSokanZuqOL";
+    String baseURL = "https://reliabletheatrecompany.com/";
+    @Autowired WebClient.Builder webClientBuilder;
 
     public List<Show> getShows() {
-        // TODO: return all shows
-        return new ArrayList<>();
+        var shows = webClientBuilder
+                                    .baseUrl(baseURL)
+                                    .build()
+                                    .get()
+                                    .uri(uriBuilder -> uriBuilder
+                                            .pathSegment("shows")
+                                            .queryParam("key",API_KEY)
+                                            .build())
+                                    .retrieve()
+                                    .bodyToMono(new ParameterizedTypeReference<CollectionModel<Show>>() {})
+                                    .block()
+                                    .getContent();
+        return shows.stream().collect(toCollection(ArrayList::new));
     }
 
     public Show getShow(String company, UUID showId) {
-        // TODO: return the given show
-        return null;
+        var show = webClientBuilder
+                .baseUrl("https://"+company)
+                .build()
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .pathSegment("shows",showId.toString())
+                        .queryParam("key",API_KEY)
+                        .build())
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Show>() {})
+                .block();
+        return show;
     }
 
     public List<LocalDateTime> getShowTimes(String company, UUID showId) {
-        // TODO: return a list with all possible times for the given show
-        return new ArrayList<>();
+        var showTimes = webClientBuilder
+                .baseUrl("https://"+company)
+                .build()
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .pathSegment("shows",showId.toString(),"times")
+                        .queryParam("key",API_KEY)
+                        .build())
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<CollectionModel<LocalDateTime>>() {})
+                .block()
+                .getContent();
+        return showTimes.stream().collect(toCollection(ArrayList::new));
     }
 
     public List<Seat> getAvailableSeats(String company, UUID showId, LocalDateTime time) {
         // TODO: return all available seats for a given show and time
-        return new ArrayList<>();
+        var seats = webClientBuilder
+                .baseUrl("https://"+company)
+                .build()
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .pathSegment("shows",showId.toString(),"seats")
+                        .queryParam("time",time)
+                        .queryParam("available","true")
+                        .queryParam("key",API_KEY)
+                        .build())
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<CollectionModel<Seat>>() {})
+                .block()
+                .getContent();
+        return seats.stream().collect(toCollection(ArrayList::new));
     }
 
     public Seat getSeat(String company, UUID showId, UUID seatId) {
