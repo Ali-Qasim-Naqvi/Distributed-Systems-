@@ -5,11 +5,17 @@ import be.kuleuven.distributedsystems.cloud.entities.Ticket;
 import com.google.cloud.pubsub.v1.AckReplyConsumer;
 import com.google.cloud.pubsub.v1.MessageReceiver;
 import com.google.cloud.pubsub.v1.Subscriber;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.google.protobuf.ByteString;
+
+import com.google.protobuf.Message;
 import com.google.pubsub.v1.ProjectSubscriptionName;
 import com.google.pubsub.v1.PubsubMessage;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.env.Environment;
@@ -40,36 +46,36 @@ public class Worker {
         System.out.println("Just a message" );
     }
     @Autowired WebClient.Builder webClientBuilder;
+    private final Gson gson = new Gson();
+    private final JsonParser jsonParser = new JsonParser();
 
 
-    // Convert String to ByteString and make corresponding changes
     @PostMapping("/confirmQuote")
     public ResponseEntity<Void> confirmQuote(@RequestBody String body) throws IOException, ClassNotFoundException, NullPointerException {
-        Object obj = JSONValue.parse(body);
+        System.out.println("[createQuote:pushSubscriber] Body is : " + body);
+        JsonElement jsonRoot = jsonParser.parse(body);
+        String messageStr = jsonRoot.getAsJsonObject().get("message").toString();
+        System.out.println("[createQuote:pushSubscriber] jsonRoot is : " + messageStr);
+        Object obj = JSONValue.parse(messageStr);
         JSONObject jsonObject = (JSONObject) obj;
-        JSONObject messageData = (JSONObject) jsonObject.get("message");
-        String message = (String) messageData.get("data");
-        System.out.println("[createQuote:pushSubscriber] Data is : " + message);
-        byte [] data = Base64.getDecoder().decode( message);
+        String messageStr1 = jsonObject.get("attributes").toString();
+        Object obj2 = JSONValue.parse(messageStr1);
+        JSONObject jsonObject2 = (JSONObject) obj2;
+        String messageStr2 = jsonObject2.get("quoteWrapper").toString();
+        System.out.println("[createQuote:pushSubscriber] Decoded is  " + messageStr2 );
+        byte [] data = Base64.getDecoder().decode(messageStr2);
         System.out.println("[createQuote:pushSubscriber] After Byte " );
-        if(data == null){
-            return ResponseEntity.ok().build();
-        }
         ObjectInputStream ois = new ObjectInputStream( new ByteArrayInputStream( data ) );
-//        ObjectInputStream ois = new ObjectInputStream(  message.chars()  );
-        System.out.println("[createQuote:pushSubscriber] After OIS " );
         Object o  = ois.readObject();
-        System.out.println("[createQuote:pushSubscriber] After ReadObject " );
         ois.close();
-        System.out.println("[createQuote:pushSubscriber] After OIS " );
-        QuotesWrapper quotesWrapper = (QuotesWrapper) o;
-        System.out.println("[createQuote:pushSubscriber] After Wrapper " );
-        String customer = quotesWrapper.getCustomer();
 
+        System.out.println("[createQuote:pushSubscriber] After Byte " );
+
+        QuotesWrapper quotesWrapper = (QuotesWrapper) o;
+        String customer = quotesWrapper.getCustomer();
         System.out.println("[createQuote:pushSubscriber] Customer is : " + customer);
 
         List<Ticket> tickets = new ArrayList<>();
-
         for(var quote:quotesWrapper.getQuotes()){
             System.out.println("[createQuote:pushSubscriber] Quote show ID is : " + quote.getShowId());
             tickets.add(webClientBuilder
@@ -87,7 +93,6 @@ public class Worker {
         }
         Booking tempBooking = new Booking(UUID.randomUUID(), LocalDateTime.now(),tickets,customer);
         //bookings.add(tempBooking);
-        System.out.println("worker-end ");
         return ResponseEntity.ok().build();
     }
 }

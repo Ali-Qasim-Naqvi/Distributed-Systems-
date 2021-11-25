@@ -183,9 +183,10 @@ public class Model {
         outputStream.writeObject( quotesWrapper );
         outputStream.close();
         String quotesWrapperString = Base64.getEncoder().encodeToString(baos.toByteArray());
-        System.out.println("Quote Wrapper String" + quotesWrapperString);
+        System.out.println("Quote Wrapper String is " + quotesWrapperString);
         ByteString data = ByteString.copyFromUtf8(quotesWrapperString);
-        PubsubMessage pubsubMessage = PubsubMessage.newBuilder().setData(data).build();
+        System.out.println("Byte String is " + data.toString());
+        PubsubMessage pubsubMessage = PubsubMessage.newBuilder().putAttributes("quoteWrapper",quotesWrapperString).build();
         // Once published, returns a server-assigned message id (unique within the topic)
         ApiFuture<String> messageIdFuture = publisher.publish(pubsubMessage);
         String messageId = messageIdFuture.get();
