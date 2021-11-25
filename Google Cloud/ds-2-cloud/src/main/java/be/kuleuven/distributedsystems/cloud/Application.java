@@ -1,8 +1,18 @@
 package be.kuleuven.distributedsystems.cloud;
 
+import com.google.api.gax.core.CredentialsProvider;
+import com.google.api.gax.core.NoCredentialsProvider;
+import com.google.api.gax.grpc.GrpcTransportChannel;
+import com.google.api.gax.rpc.FixedTransportChannelProvider;
+import com.google.api.gax.rpc.TransportChannelProvider;
+import com.google.cloud.pubsub.v1.*;
+import com.google.pubsub.v1.*;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
@@ -17,12 +27,18 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
 import javax.net.ssl.SSLException;
+import java.io.IOException;
 import java.util.Objects;
 
 @EnableHypermediaSupport(type = EnableHypermediaSupport.HypermediaType.HAL)
 @SpringBootApplication
 public class Application {
 
+    @Autowired String projectId;
+    private String topicId = "confirm-quote";
+    private String subscriptionId = "confirm-quote-subscription";
+    private String pushEndPoint = "http://localhost:8080/confirmQuote";
+//    private String pushEndPoint = "http://localhost:3000/messages";
     @SuppressWarnings("unchecked")
     public static void main(String[] args) {
         System.setProperty("server.port", System.getenv().getOrDefault("PORT", "8080"));
@@ -60,5 +76,29 @@ public class Application {
         DefaultHttpFirewall firewall = new DefaultHttpFirewall();
         firewall.setAllowUrlEncodedSlash(true);
         return firewall;
+    }
+
+    @Bean
+    public Publisher pubsubPublisher() throws IOException {
+        String hostport = "localhost:8083";
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(hostport).usePlaintext().build();
+
+        TransportChannelProvider channelProvider = FixedTransportChannelProvider.create(GrpcTransportChannel.create(channel));
+        CredentialsProvider credentialsProvider = NoCredentialsProvider.create();
+
+        TopicName topicName = TopicName.of(projectId, topicId);
+        Publisher publisher = null;
+        TopicAdminClient topicAdminClient = TopicAdminClient.create(TopicAdminSettings.newBuilder().setTransportChannelProvider(channelProvider).setCredentialsProvider(credentialsProvider).build());
+        Topic topic = topicAdminClient.createTopic(topicName);
+        // Create a publisher instance with default settings bound to the topic
+        SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create(SubscriptionAdminSettings.newBuilder().setTransportChannelProvider(channelProvider).setCredentialsProvider(credentialsProvider).build());
+        ProjectSubscriptionName subscriptionName = ProjectSubscriptionName.of(projectId, subscriptionId);
+        PushConfig pushConfig = PushConfig.newBuilder().setPushEndpoint(pushEndPoint).build();
+
+        // Create a push subscription with default acknowledgement deadline of 10 seconds.
+        // Messages not successfully acknowledged within 10 seconds will get resent by the server.
+        Subscription subscription = subscriptionAdminClient.createSubscription(subscriptionName, topicName, pushConfig, 60);
+        System.out.println("Created push subscription: " + subscription.getName());
+        return Publisher.newBuilder(topicName).setChannelProvider(channelProvider).setCredentialsProvider(credentialsProvider).build();
     }
 }
