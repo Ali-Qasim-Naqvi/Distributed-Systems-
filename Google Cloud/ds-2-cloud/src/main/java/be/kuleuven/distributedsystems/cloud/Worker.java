@@ -52,30 +52,25 @@ public class Worker {
 
     @PostMapping("/confirmQuote")
     public ResponseEntity<Void> confirmQuote(@RequestBody String body) throws IOException, ClassNotFoundException, NullPointerException {
-        System.out.println("[createQuote:pushSubscriber] Body is : " + body);
         JsonElement jsonRoot = jsonParser.parse(body);
         String messageStr = jsonRoot.getAsJsonObject().get("message").toString();
-        System.out.println("[createQuote:pushSubscriber] jsonRoot is : " + messageStr);
         Object obj = JSONValue.parse(messageStr);
         JSONObject jsonObject = (JSONObject) obj;
         String messageStr1 = jsonObject.get("attributes").toString();
         Object obj2 = JSONValue.parse(messageStr1);
         JSONObject jsonObject2 = (JSONObject) obj2;
         String messageStr2 = jsonObject2.get("quoteWrapper").toString();
-        System.out.println("[createQuote:pushSubscriber] Decoded is  " + messageStr2 );
         byte [] data = Base64.getDecoder().decode(messageStr2);
-        System.out.println("[createQuote:pushSubscriber] After Byte " );
         ObjectInputStream ois = new ObjectInputStream( new ByteArrayInputStream( data ) );
         Object o  = ois.readObject();
         ois.close();
-
-        System.out.println("[createQuote:pushSubscriber] After Byte " );
 
         QuotesWrapper quotesWrapper = (QuotesWrapper) o;
         String customer = quotesWrapper.getCustomer();
         System.out.println("[createQuote:pushSubscriber] Customer is : " + customer);
 
         List<Ticket> tickets = new ArrayList<>();
+        boolean null_ticket = false;
         for(var quote:quotesWrapper.getQuotes()){
             System.out.println("[createQuote:pushSubscriber] Quote show ID is : " + quote.getShowId());
             tickets.add(webClientBuilder
@@ -91,8 +86,31 @@ public class Worker {
                     .bodyToMono(new ParameterizedTypeReference<Ticket>() {})
                     .block());
         }
+
+        for (var entry:tickets){
+            if (entry.getTicketId() == null) {
+                null_ticket = true;
+                tickets.remove(entry);
+            }
+        }
+        if(null_ticket){
+            for(var entry:tickets) {
+                webClientBuilder
+                        .baseUrl("https://" + entry.getCompany())
+                        .build()
+                        .delete()
+                        .uri(uriBuilder -> uriBuilder
+                                .pathSegment("shows", entry.getShowId().toString(), "seats", entry.getSeatId().toString(), "ticket", entry.getTicketId().toString())
+                                .queryParam("key", API_KEY)
+                                .build())
+                        .retrieve()
+                        .bodyToMono(new ParameterizedTypeReference<Ticket>() {})
+                        .block();
+            }
+            return ResponseEntity.status(201).build();
+        }
         Booking tempBooking = new Booking(UUID.randomUUID(), LocalDateTime.now(),tickets,customer);
         //bookings.add(tempBooking);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.status(200).build();
     }
 }
