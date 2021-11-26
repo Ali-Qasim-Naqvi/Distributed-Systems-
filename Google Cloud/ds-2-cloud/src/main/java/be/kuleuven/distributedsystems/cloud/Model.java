@@ -3,12 +3,16 @@ package be.kuleuven.distributedsystems.cloud;
 import be.kuleuven.distributedsystems.cloud.controller.AuthController;
 import be.kuleuven.distributedsystems.cloud.entities.*;
 import com.google.api.core.ApiFuture;
+import com.google.api.core.ApiFutureCallback;
+import com.google.api.core.ApiFutures;
 import com.google.api.gax.core.CredentialsProvider;
 import com.google.api.gax.core.NoCredentialsProvider;
 import com.google.api.gax.grpc.GrpcTransportChannel;
+import com.google.api.gax.rpc.ApiException;
 import com.google.api.gax.rpc.FixedTransportChannelProvider;
 import com.google.api.gax.rpc.TransportChannelProvider;
 import com.google.cloud.pubsub.v1.*;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.*;
 import io.grpc.ManagedChannel;
@@ -40,15 +44,17 @@ import static java.util.stream.Collectors.toCollection;
 
 @Component
 public class Model {
-    private List<Booking> bookings = new ArrayList<>();
+
     String API_KEY = "wCIoTqec6vGJijW2meeqSokanZuqOL";
     String baseURL = "https://reliabletheatrecompany.com/";
+    String baseURL2 = "https://unreliabletheatrecompany.com/";
     @Autowired String projectId;
     @Autowired WebClient.Builder webClientBuilder;
     @Autowired private Publisher pubSubPublisher;
+    @Autowired List<Booking> bookings;
 
     public List<Show> getShows() {
-        var shows = webClientBuilder
+        var shows1 = webClientBuilder
                                     .baseUrl(baseURL)
                                     .build()
                                     .get()
@@ -58,9 +64,28 @@ public class Model {
                                             .build())
                                     .retrieve()
                                     .bodyToMono(new ParameterizedTypeReference<CollectionModel<Show>>() {})
+                                    .retry(3)
                                     .block()
                                     .getContent();
-        return new ArrayList<>(shows);
+        var shows2 = webClientBuilder
+                .baseUrl(baseURL2)
+                .build()
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .pathSegment("shows")
+                        .queryParam("key",API_KEY)
+                        .build())
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<CollectionModel<Show>>() {})
+                .retry(3)
+                .block()
+                .getContent();
+        List<Show> showList1 = new ArrayList<>(shows1);
+        List<Show> showList2 = new ArrayList<>(shows2);
+        List<Show> finalList = new ArrayList<>();
+        finalList.addAll(showList1);
+        finalList.addAll(showList2);
+        return finalList;
     }
 
     public Show getShow(String company, UUID showId) {
@@ -74,6 +99,7 @@ public class Model {
                         .build())
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Show>() {})
+                .retry(3)
                 .block();
         return show;
     }
@@ -89,6 +115,7 @@ public class Model {
                         .build())
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<CollectionModel<LocalDateTime>>() {})
+                .retry(3)
                 .block()
                 .getContent();
         return new ArrayList<>(showTimes);
@@ -107,6 +134,7 @@ public class Model {
                         .build())
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<CollectionModel<Seat>>() {})
+                .retry(3)
                 .block()
                 .getContent();
         return new ArrayList<>(seats);
@@ -123,6 +151,7 @@ public class Model {
                         .build())
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Seat>() {})
+                .retry(3)
                 .block();
         return seat;
     }
@@ -138,6 +167,7 @@ public class Model {
                         .build())
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Ticket>() {})
+                .retry(3)
                 .block();
         return ticket;
     }
@@ -190,11 +220,37 @@ public class Model {
         // Once published, returns a server-assigned message id (unique within the topic)
         ApiFuture<String> messageIdFuture = publisher.publish(pubsubMessage);
         String messageId = messageIdFuture.get();
-
         System.out.println("Published message ID: " + messageId);
-        if (publisher != null) {
-            // When finished with the publisher, shutdown to free up resources.
-//            publisher.awaitTermination(1, TimeUnit.MINUTES);
+
+        try {
+            // Add an asynchronous callback to handle success / failure
+            ApiFutures.addCallback(messageIdFuture, new ApiFutureCallback<String>() {
+                        @Override
+                        public void onFailure(Throwable throwable) {
+                            if (throwable instanceof ApiException) {
+                                ApiException apiException = ((ApiException) throwable);
+                                // details on the API exception
+                                System.out.println(apiException.getStatusCode().getCode());
+                                System.out.println(apiException.isRetryable());
+                            }
+                            System.out.println("Error publishing message : " + messageId);
+                            System.out.println("Error publishing error : " + throwable.getMessage());
+                            System.out.println("Error publishing cause : " + throwable.getCause());
+                        }
+
+                        @Override
+                        public void onSuccess(String messageId) {
+                            // Once published, returns server-assigned message ids (unique within the topic)
+                            System.out.println("Successfully Executed: " + messageId);
+                        }
+                    },
+                    MoreExecutors.directExecutor());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+//        if (publisher != null) {
+//            // When finished with the publisher, shutdown to free up resources.
+////            publisher.awaitTermination(1, TimeUnit.MINUTES);
+//        }
     }
 }

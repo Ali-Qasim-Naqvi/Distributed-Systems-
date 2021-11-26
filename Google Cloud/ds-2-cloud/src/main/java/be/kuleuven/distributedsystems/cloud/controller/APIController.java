@@ -61,7 +61,7 @@ public class APIController {
         ResponseCookie cookie = Cart.toCookie(cart);
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.SET_COOKIE, cookie.toString());
-        headers.add(HttpHeaders.LOCATION, "/account");
+        headers.add(HttpHeaders.LOCATION, "/cart");
         return new ResponseEntity<>(headers, HttpStatus.FOUND);
     }
 }

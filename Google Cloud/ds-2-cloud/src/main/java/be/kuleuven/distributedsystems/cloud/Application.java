@@ -30,6 +30,7 @@ import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.util.Objects;
 
+
 @EnableHypermediaSupport(type = EnableHypermediaSupport.HypermediaType.HAL)
 @SpringBootApplication
 public class Application {

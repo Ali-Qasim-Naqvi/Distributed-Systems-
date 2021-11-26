@@ -17,6 +17,7 @@ import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpHeaders;
@@ -39,6 +40,8 @@ import java.util.concurrent.TimeoutException;
 
 @RestController
 public class Worker {
+
+
     String API_KEY = "wCIoTqec6vGJijW2meeqSokanZuqOL";
     @Autowired String projectId;
     String topicId = "confirm-quote";
@@ -48,7 +51,12 @@ public class Worker {
     @Autowired WebClient.Builder webClientBuilder;
     private final Gson gson = new Gson();
     private final JsonParser jsonParser = new JsonParser();
+    private List<Booking> bookings = new ArrayList<>();
 
+    @Bean
+    public List<Booking> returnbookings(){
+        return bookings;
+    }
 
     @PostMapping("/confirmQuote")
     public ResponseEntity<Void> confirmQuote(@RequestBody String body) throws IOException, ClassNotFoundException, NullPointerException {
@@ -84,6 +92,7 @@ public class Worker {
                             .build())
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<Ticket>() {})
+                    .retry(3)
                     .block());
         }
 
@@ -105,12 +114,13 @@ public class Worker {
                                 .build())
                         .retrieve()
                         .bodyToMono(new ParameterizedTypeReference<Ticket>() {})
+                        .retry(3)
                         .block();
             }
             return ResponseEntity.status(201).build();
         }
         Booking tempBooking = new Booking(UUID.randomUUID(), LocalDateTime.now(),tickets,customer);
-        //bookings.add(tempBooking);
+        bookings.add(tempBooking);
         return ResponseEntity.status(200).build();
     }
 }
