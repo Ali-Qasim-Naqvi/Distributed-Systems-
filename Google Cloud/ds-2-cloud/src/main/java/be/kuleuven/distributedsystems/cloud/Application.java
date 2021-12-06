@@ -1,10 +1,14 @@
 package be.kuleuven.distributedsystems.cloud;
 
 import com.google.api.gax.core.CredentialsProvider;
+import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.api.gax.core.NoCredentialsProvider;
 import com.google.api.gax.grpc.GrpcTransportChannel;
 import com.google.api.gax.rpc.FixedTransportChannelProvider;
 import com.google.api.gax.rpc.TransportChannelProvider;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.FirestoreOptions;
 import com.google.cloud.pubsub.v1.*;
 import com.google.pubsub.v1.*;
 import io.grpc.ManagedChannel;
@@ -25,6 +29,7 @@ import org.springframework.security.web.firewall.HttpFirewall;
 import org.springframework.security.web.firewall.StrictHttpFirewall;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
+import com.google.cloud.firestore.FirestoreOptions.EmulatorCredentials;
 
 import javax.net.ssl.SSLException;
 import java.io.IOException;
@@ -101,5 +106,19 @@ public class Application {
         Subscription subscription = subscriptionAdminClient.createSubscription(subscriptionName, topicName, pushConfig, 60);
         System.out.println("Created push subscription: " + subscription.getName());
         return Publisher.newBuilder(topicName).setChannelProvider(channelProvider).setCredentialsProvider(credentialsProvider).build();
+    }
+
+    @Bean
+    public Firestore firestoreInitializer() throws IOException {
+        CredentialsProvider credentialsProvider = NoCredentialsProvider.create();
+        FirestoreOptions firestoreOptions =
+                FirestoreOptions.getDefaultInstance().toBuilder()
+                        .setProjectId(projectId)
+                        .setEmulatorHost("localhost:8084")
+                        .setCredentials(new EmulatorCredentials())
+                        .setCredentialsProvider(FixedCredentialsProvider.create(new EmulatorCredentials()))
+                        .build();
+        Firestore db = firestoreOptions.getService();
+        return db;
     }
 }

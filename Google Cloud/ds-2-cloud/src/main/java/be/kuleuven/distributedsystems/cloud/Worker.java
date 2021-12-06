@@ -2,6 +2,11 @@ package be.kuleuven.distributedsystems.cloud;
 
 import be.kuleuven.distributedsystems.cloud.entities.Booking;
 import be.kuleuven.distributedsystems.cloud.entities.Ticket;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.DocumentReference;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.FirestoreOptions;
+import com.google.cloud.firestore.WriteResult;
 import com.google.cloud.pubsub.v1.AckReplyConsumer;
 import com.google.cloud.pubsub.v1.MessageReceiver;
 import com.google.cloud.pubsub.v1.Subscriber;
@@ -31,10 +36,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -48,6 +51,7 @@ public class Worker {
     @Autowired public Worker (){
         System.out.println("Just a message" );
     }
+    @Autowired Firestore db;
     @Autowired WebClient.Builder webClientBuilder;
     private final Gson gson = new Gson();
     private final JsonParser jsonParser = new JsonParser();
@@ -59,7 +63,7 @@ public class Worker {
     }
 
     @PostMapping("/confirmQuote")
-    public ResponseEntity<Void> confirmQuote(@RequestBody String body) throws IOException, ClassNotFoundException, NullPointerException {
+    public ResponseEntity<Void> confirmQuote(@RequestBody String body) throws IOException, ClassNotFoundException, NullPointerException, ExecutionException, InterruptedException {
         JsonElement jsonRoot = jsonParser.parse(body);
         String messageStr = jsonRoot.getAsJsonObject().get("message").toString();
         Object obj = JSONValue.parse(messageStr);
@@ -120,6 +124,18 @@ public class Worker {
             return ResponseEntity.status(201).build();
         }
         Booking tempBooking = new Booking(UUID.randomUUID(), LocalDateTime.now(),tickets,customer);
+        DocumentReference docRef = db.collection(tempBooking.getCustomer()).document(tempBooking.getId().toString());
+//        Map<String, Object> tempMap = new HashMap<>();
+//        tempMap.put("Id", tempBooking.getId());
+//        tempMap.put("Time", tempBooking.getTime());
+//        tempMap.put("Tickets", tempBooking.getTickets());
+//        tempMap.put("Customer",tempBooking.getCustomer());
+        //asynchronously write data
+        ApiFuture<WriteResult> result = docRef.set(tempBooking);
+        // ...
+        // result.get() blocks on response
+        System.out.println("Update time : " + result.get().getUpdateTime());
+
         bookings.add(tempBooking);
         return ResponseEntity.status(200).build();
     }

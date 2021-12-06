@@ -11,6 +11,9 @@ import com.google.api.gax.grpc.GrpcTransportChannel;
 import com.google.api.gax.rpc.ApiException;
 import com.google.api.gax.rpc.FixedTransportChannelProvider;
 import com.google.api.gax.rpc.TransportChannelProvider;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.google.cloud.firestore.QuerySnapshot;
 import com.google.cloud.pubsub.v1.*;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.protobuf.ByteString;
@@ -30,6 +33,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.awt.print.Book;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -52,6 +56,7 @@ public class Model {
     @Autowired WebClient.Builder webClientBuilder;
     @Autowired private Publisher pubSubPublisher;
     @Autowired List<Booking> bookings;
+    @Autowired Firestore db;
 
     public List<Show> getShows() {
         var shows1 = webClientBuilder
@@ -172,12 +177,30 @@ public class Model {
         return ticket;
     }
 
-    public List<Booking> getBookings(String customer) {
-        List<Booking> bookingList = bookings.stream().filter(booking -> booking.getCustomer().equals(customer)).collect(Collectors.toList());
-        return bookingList;
+    public List<Booking> getBookings(String customer) throws ExecutionException, InterruptedException {
+        // asynchronously retrieve all users
+        List<Booking> bookings2 = new ArrayList<>();
+        ApiFuture<QuerySnapshot> query = db.collection(customer).get();
+        // ...
+        // query.get() blocks on response
+        QuerySnapshot querySnapshot = query.get();
+        List<QueryDocumentSnapshot> documents = querySnapshot.getDocuments();
+        for (QueryDocumentSnapshot document : documents) {
+            //Booking tempBooking = document.toObject(Booking.class);
+
+            //Map<String, Object> tempMap = document.getData();
+//            Map<String,Object> tempId= (Map<String, Object>) document.get("id");
+//            UUID Id = new UUID((long)tempId.get("mostSignificantBits"),(long)tempId.get("leastSignificantBits"));
+//            Map<String,Object> tempTime= (Map<String, Object>) document.get("time");
+//            UUID Id = new UUID((long)tempId.get("mostSignificantBits"),(long)tempId.get("mostSignificantBits"));
+
+//            bookings2.add(new Booking((UUID) tempMap.get("Id"),(LocalDateTime) tempMap.get("Time"),(List<Ticket>) tempMap.get("Tickets"),(String) tempMap.get("Customer")));
+        }
+        return bookings2.stream().filter(booking -> booking.getCustomer().equals(customer)).collect(Collectors.toList());
     }
 
     public List<Booking> getAllBookings() {
+
         return bookings;
     }
 
