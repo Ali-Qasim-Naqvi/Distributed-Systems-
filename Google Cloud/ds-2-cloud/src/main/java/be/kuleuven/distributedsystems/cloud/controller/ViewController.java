@@ -16,6 +16,7 @@ import org.springframework.web.servlet.ModelAndView;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 @RestController
@@ -33,7 +34,7 @@ public class ViewController {
 
     @GetMapping({"/", "/shows"})
     public ModelAndView viewShows(
-            @CookieValue(value = "cart", required = false) String cartString) {
+            @CookieValue(value = "cart", required = false) String cartString) throws Exception {
         List<Quote> quotes = Cart.fromCookie(cartString);
         ModelAndView modelAndView = new ModelAndView("shows");
         modelAndView.addObject("cartLength",
@@ -47,7 +48,7 @@ public class ViewController {
     public ModelAndView viewShowTimes(
             @PathVariable String company,
             @PathVariable UUID showId,
-            @CookieValue(value = "cart", required = false) String cartString) {
+            @CookieValue(value = "cart", required = false) String cartString) throws ExecutionException, InterruptedException {
         List<Quote> quotes = Cart.fromCookie(cartString);
         ModelAndView modelAndView = new ModelAndView("show_times");
         modelAndView.addObject("cartLength",
@@ -68,7 +69,7 @@ public class ViewController {
             @PathVariable String company,
             @PathVariable UUID showId,
             @PathVariable @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") LocalDateTime time,
-            @CookieValue(value = "cart", required = false) String cartString) {
+            @CookieValue(value = "cart", required = false) String cartString) throws ExecutionException, InterruptedException {
         List<Quote> quotes = Cart.fromCookie(cartString);
         ModelAndView modelAndView = new ModelAndView("show_seats");
         modelAndView.addObject("cartLength",
@@ -92,7 +93,7 @@ public class ViewController {
 
     @GetMapping("/cart")
     public ModelAndView viewCart(
-            @CookieValue(value = "cart", required = false) String cartString) {
+            @CookieValue(value = "cart", required = false) String cartString) throws ExecutionException, InterruptedException {
         List<Quote> quotes = Cart.fromCookie(cartString);
         ModelAndView modelAndView = new ModelAndView("cart");
         modelAndView.addObject("cartLength",

@@ -39,6 +39,26 @@ public class Show {
         return this.image;
     }
 
+    public void setCompany(String company) {
+        this.company = company;
+    }
+
+    public void setShowId(UUID showId) {
+        this.showId = showId;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public void setImage(String image) {
+        this.image = image;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof Show)) {
