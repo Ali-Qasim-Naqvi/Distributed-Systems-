@@ -124,14 +124,12 @@ public class Worker {
             return ResponseEntity.status(201).build();
         }
         Booking tempBooking = new Booking(UUID.randomUUID(), LocalDateTime.now(),tickets,customer);
-        DocumentReference docRef = db.collection(tempBooking.getCustomer()).document(tempBooking.getId().toString());
-//        Map<String, Object> tempMap = new HashMap<>();
-//        tempMap.put("Id", tempBooking.getId());
-//        tempMap.put("Time", tempBooking.getTime());
-//        tempMap.put("Tickets", tempBooking.getTickets());
-//        tempMap.put("Customer",tempBooking.getCustomer());
+        BookingWrapper tempBooking2 = new BookingWrapper(UUID.randomUUID(),LocalDateTime.now(),tickets,customer);
+        DocumentReference docRef = db.collection(tempBooking2.getCustomer()).document(tempBooking2.getId().toString());
+        Map<String, Object> tempMap = new HashMap<>();
+        tempMap.put("Booking",tempBooking2.toString(tempBooking2) );
         //asynchronously write data
-        ApiFuture<WriteResult> result = docRef.set(tempBooking);
+        ApiFuture<WriteResult> result = docRef.set(tempMap);
         // ...
         // result.get() blocks on response
         System.out.println("Update time : " + result.get().getUpdateTime());

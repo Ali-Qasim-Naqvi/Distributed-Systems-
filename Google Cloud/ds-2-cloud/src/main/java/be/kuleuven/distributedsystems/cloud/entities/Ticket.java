@@ -1,8 +1,9 @@
 package be.kuleuven.distributedsystems.cloud.entities;
 
+import java.io.Serializable;
 import java.util.UUID;
 
-public class Ticket {
+public class Ticket implements Serializable {
     private String company;
     private UUID showId;
     private UUID seatId;
@@ -38,6 +39,26 @@ public class Ticket {
 
     public String getCustomer() {
         return this.customer;
+    }
+
+    public void setCompany(String company) {
+        this.company = company;
+    }
+
+    public void setShowId(UUID showId) {
+        this.showId = showId;
+    }
+
+    public void setSeatId(UUID seatId) {
+        this.seatId = seatId;
+    }
+
+    public void setTicketId(UUID ticketId) {
+        this.ticketId = ticketId;
+    }
+
+    public void setCustomer(String customer) {
+        this.customer = customer;
     }
 
     @Override

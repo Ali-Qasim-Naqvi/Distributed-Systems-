@@ -11,17 +11,19 @@ import com.google.api.gax.grpc.GrpcTransportChannel;
 import com.google.api.gax.rpc.ApiException;
 import com.google.api.gax.rpc.FixedTransportChannelProvider;
 import com.google.api.gax.rpc.TransportChannelProvider;
-import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.QueryDocumentSnapshot;
-import com.google.cloud.firestore.QuerySnapshot;
+import com.google.cloud.firestore.*;
 import com.google.cloud.pubsub.v1.*;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.google.gson.Gson;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.*;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.netty.shaded.io.grpc.netty.NegotiationType;
 import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder;
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
+import net.minidev.json.JSONValue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cglib.core.Local;
 import org.springframework.context.annotation.Bean;
@@ -34,9 +36,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.awt.print.Book;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -55,23 +57,66 @@ public class Model {
     @Autowired String projectId;
     @Autowired WebClient.Builder webClientBuilder;
     @Autowired private Publisher pubSubPublisher;
-    @Autowired List<Booking> bookings;
     @Autowired Firestore db;
 
-    public List<Show> getShows() {
+    public boolean checkDataBase() throws Exception {
+        //ApiFuture<QuerySnapshot> future = firestore.collection("shows").get();
+        //List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+
+        Iterable<CollectionReference> collections = db.listCollections();
+        boolean isCreated = false;
+        for (CollectionReference collRef : collections) {
+            if (collRef.getId().equals("shows")) {
+                isCreated = true;
+            }
+        }
+        if (!isCreated) {
+            String payload = readFileAsString();
+            Object obj= JSONValue.parse(payload);
+            JSONObject jsonObject = (JSONObject) obj;
+            JSONArray jsonArray = (JSONArray) jsonObject.get("shows");
+
+            for(int i = 0; i < jsonArray.size(); i++) {
+                ShowWrapper showWrapper = convertFromJSONToMyClass((JSONObject) jsonArray.get(i));
+                ShowWrapperUpload showWrapperUpload = new ShowWrapperUpload(showWrapper.getName(), showWrapper.getLocation(),showWrapper.getImage(),showWrapper.getSeats());
+                db.collection("shows").document(UUID.randomUUID().toString()).set(showWrapperUpload);
+            }
+            return false;
+        }
+        return true;
+    }
+    public static ShowWrapper convertFromJSONToMyClass(JSONObject json) {
+        if (json == null) {
+            return null;
+        }
+        Gson gson = new Gson();
+        return gson.fromJson(json.toString(), ShowWrapper.class);
+    }
+
+    public String readFileAsString()throws Exception
+    {
+        return new String(Files.readAllBytes(Paths.get("src/main/resources/data.json")));
+    }
+
+    public UUID stringToUUID (String uuid){
+        return UUID.fromString(uuid);
+    }
+
+    public List<Show> getShows() throws Exception {
+        checkDataBase();
         var shows1 = webClientBuilder
-                                    .baseUrl(baseURL)
-                                    .build()
-                                    .get()
-                                    .uri(uriBuilder -> uriBuilder
-                                            .pathSegment("shows")
-                                            .queryParam("key",API_KEY)
-                                            .build())
-                                    .retrieve()
-                                    .bodyToMono(new ParameterizedTypeReference<CollectionModel<Show>>() {})
-                                    .retry(3)
-                                    .block()
-                                    .getContent();
+                .baseUrl(baseURL)
+                .build()
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                        .pathSegment("shows")
+                        .queryParam("key",API_KEY)
+                        .build())
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<CollectionModel<Show>>() {})
+                .retry(3)
+                .block()
+                .getContent();
         var shows2 = webClientBuilder
                 .baseUrl(baseURL2)
                 .build()
@@ -85,15 +130,36 @@ public class Model {
                 .retry(3)
                 .block()
                 .getContent();
+
+        ApiFuture<QuerySnapshot> future =
+                db.collection("shows").get();
+        List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+
+        List<Show> shows3 = new ArrayList<>();
+        ShowWrapperUpload tempShowWrapper = null;
+        for ( var  document:documents){
+            tempShowWrapper = document.toObject(ShowWrapperUpload.class);
+            shows3.add(new Show("Local Company", UUID.fromString(document.getId()),(String)document.get("name"), (String) document.get("location"), (String) document.get("image")));
+        }
+
         List<Show> showList1 = new ArrayList<>(shows1);
         List<Show> showList2 = new ArrayList<>(shows2);
+        List<Show> showList3 = new ArrayList<>(shows3);
         List<Show> finalList = new ArrayList<>();
         finalList.addAll(showList1);
         finalList.addAll(showList2);
+        finalList.addAll(showList3);
+
         return finalList;
     }
 
-    public Show getShow(String company, UUID showId) {
+    public Show getShow(String company, UUID showId) throws ExecutionException, InterruptedException {
+        if (company.equals( "Local Company")){
+            ApiFuture<DocumentSnapshot> future =
+                    db.collection("shows").document(showId.toString()).get();
+            DocumentSnapshot document = future.get();
+            return new Show("Local Company", UUID.fromString(document.getId()), (String)document.get("name"), (String) document.get("location"), (String) document.get("image"));
+        }
         var show = webClientBuilder
                 .baseUrl("https://"+company)
                 .build()
@@ -109,7 +175,25 @@ public class Model {
         return show;
     }
 
-    public List<LocalDateTime> getShowTimes(String company, UUID showId) {
+    public List<LocalDateTime> getShowTimes(String company, UUID showId) throws ExecutionException, InterruptedException {
+        if (company.equals( "Local Company")){
+            ApiFuture<DocumentSnapshot> future = db.collection("shows").document(showId.toString()).get();
+            DocumentSnapshot document = future.get();
+            ShowWrapperUpload tempShowWrapper = document.toObject(ShowWrapperUpload.class);
+            List<SeatWrapperExtended> tempSeatWrapper = tempShowWrapper.getSeats();
+            Set<LocalDateTime> setTime = new HashSet<>();
+            for(var entry : tempSeatWrapper){
+                String times = entry.getTime();
+                setTime.add(LocalDateTime.parse(times));
+            }
+            /*Map<String,Object> updates = new HashMap<>();
+            for(int tempIndex = 0;tempIndex<tempSeatWrapper.size();tempIndex++){
+                updates.put("seats."+String.valueOf(tempIndex)+".seatID",UUID.randomUUID().toString());
+            }
+            DocumentReference docRef = db.collection("shows").document(showId.toString());
+            ApiFuture<WriteResult> writeResultApiFuture = docRef.update(updates);
+           */ return new LinkedList<LocalDateTime>(setTime);
+        }
         var showTimes = webClientBuilder
                 .baseUrl("https://"+company)
                 .build()
@@ -126,7 +210,23 @@ public class Model {
         return new ArrayList<>(showTimes);
     }
 
-    public List<Seat> getAvailableSeats(String company, UUID showId, LocalDateTime time) {
+    public List<Seat> getAvailableSeats(String company, UUID showId, LocalDateTime time) throws ExecutionException, InterruptedException {
+        if (company.equals( "Local Company")) {
+            ApiFuture<DocumentSnapshot> future = db.collection("shows").document(showId.toString()).get();
+            DocumentSnapshot document = future.get();
+            ShowWrapperUpload tempShowWrapper = document.toObject(ShowWrapperUpload.class);
+            List<SeatWrapperExtended> tempSeatWrapper = tempShowWrapper.getSeats();
+            List<Seat> tempSeats = new ArrayList<>();
+            for(var entry : tempSeatWrapper){
+                if(entry.getTime().substring(0,entry.getTime().length()-3).equals(time.toString()) && entry.getAvailability()){
+                    tempSeats.add(new Seat(company,showId,UUID.fromString(entry.getSeatId()), time, entry.getType(), entry.getName(), entry.getPrice()));
+                    System.out.println("The seat is : " + entry.getName() );
+                }
+            }
+
+            return tempSeats;
+        }
+
         var seats = webClientBuilder
                 .baseUrl("https://"+company)
                 .build()
@@ -145,7 +245,23 @@ public class Model {
         return new ArrayList<>(seats);
     }
 
-    public Seat getSeat(String company, UUID showId, UUID seatId) {
+    public Seat getSeat(String company, UUID showId, UUID seatId) throws ExecutionException, InterruptedException {
+        if (company.equals( "Local Company")) {
+            ApiFuture<DocumentSnapshot> future = db.collection("shows").document(showId.toString()).get();
+            DocumentSnapshot document = future.get();
+            ShowWrapperUpload tempShowWrapper = document.toObject(ShowWrapperUpload.class);
+            List<SeatWrapperExtended> tempSeatWrapper = tempShowWrapper.getSeats();
+
+            for(var entry : tempSeatWrapper){
+                System.out.println("The seat id is : " + entry.getSeatId());
+                System.out.println("The UUID is : " + seatId.toString());
+                System.out.println("The condition is : " + entry.getSeatId().equals(seatId.toString()));
+                if(entry.getSeatId().equals(seatId.toString())){
+                    return new Seat(company,showId,UUID.fromString(entry.getSeatId()), LocalDateTime.parse(entry.getTime()), entry.getType(), entry.getName(), entry.getPrice());
+                }
+            }
+
+        }
         var seat = webClientBuilder
                 .baseUrl("https://"+company)
                 .build()
@@ -177,34 +293,47 @@ public class Model {
         return ticket;
     }
 
-    public List<Booking> getBookings(String customer) throws ExecutionException, InterruptedException {
-        // asynchronously retrieve all users
-        List<Booking> bookings2 = new ArrayList<>();
+    public List<Booking> getBookings(String customer) throws ExecutionException, InterruptedException, IOException, ClassNotFoundException {
+        List<Booking> bookings = new ArrayList<>();
         ApiFuture<QuerySnapshot> query = db.collection(customer).get();
-        // ...
-        // query.get() blocks on response
+
         QuerySnapshot querySnapshot = query.get();
         List<QueryDocumentSnapshot> documents = querySnapshot.getDocuments();
         for (QueryDocumentSnapshot document : documents) {
-            //Booking tempBooking = document.toObject(Booking.class);
-
-            //Map<String, Object> tempMap = document.getData();
-//            Map<String,Object> tempId= (Map<String, Object>) document.get("id");
-//            UUID Id = new UUID((long)tempId.get("mostSignificantBits"),(long)tempId.get("leastSignificantBits"));
-//            Map<String,Object> tempTime= (Map<String, Object>) document.get("time");
-//            UUID Id = new UUID((long)tempId.get("mostSignificantBits"),(long)tempId.get("mostSignificantBits"));
-
-//            bookings2.add(new Booking((UUID) tempMap.get("Id"),(LocalDateTime) tempMap.get("Time"),(List<Ticket>) tempMap.get("Tickets"),(String) tempMap.get("Customer")));
+            byte [] data = Base64.getDecoder().decode( document.getString("Booking"));
+            ObjectInputStream ois = new ObjectInputStream( new ByteArrayInputStream( data ) );
+            Object o  = ois.readObject();
+            ois.close();
+            BookingWrapper bookingWrapper = (BookingWrapper) o;
+            bookings.add(new Booking(bookingWrapper.getId(),bookingWrapper.getTime(),bookingWrapper.getTickets(),bookingWrapper.getCustomer()));
         }
-        return bookings2.stream().filter(booking -> booking.getCustomer().equals(customer)).collect(Collectors.toList());
-    }
-
-    public List<Booking> getAllBookings() {
-
         return bookings;
     }
 
-    public Set<String> getBestCustomers() {
+    public List<Booking> getAllBookings() throws ExecutionException, InterruptedException, IOException, ClassNotFoundException {
+        List<Booking> bookings = new ArrayList<>();
+        Iterable<CollectionReference> collections = db.listCollections();
+        for (CollectionReference collRef : collections) {
+            if (!collRef.getId().equals("shows")) {
+                Iterable<DocumentReference> documents = collRef.listDocuments();
+                for (DocumentReference document : documents) {
+                    ApiFuture<DocumentSnapshot> query = document.get();
+                    DocumentSnapshot querySnapshot = query.get();
+                    byte[] data = Base64.getDecoder().decode(querySnapshot.getString("Booking"));
+                    ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data));
+                    Object o = ois.readObject();
+                    ois.close();
+                    BookingWrapper bookingWrapper = (BookingWrapper) o;
+                    bookings.add(new Booking(bookingWrapper.getId(), bookingWrapper.getTime(), bookingWrapper.getTickets(), bookingWrapper.getCustomer()));
+                }
+            }
+        }
+        return bookings;
+    }
+
+    public Set<String> getBestCustomers() throws IOException, ExecutionException, InterruptedException, ClassNotFoundException {
+        List<Booking> bookings = getAllBookings();
+
         Map<String, Integer> customerBookings = new HashMap<String, Integer>();
         for(var entry:bookings){
             customerBookings.put(entry.getCustomer(),0);

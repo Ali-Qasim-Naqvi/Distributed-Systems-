@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-public class Booking implements Serializable {
+public class Booking{
     private UUID id;
     private LocalDateTime time;
     private List<Ticket> tickets;
