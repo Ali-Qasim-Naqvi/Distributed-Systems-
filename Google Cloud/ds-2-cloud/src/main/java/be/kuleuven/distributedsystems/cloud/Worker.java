@@ -1,12 +1,10 @@
 package be.kuleuven.distributedsystems.cloud;
 
 import be.kuleuven.distributedsystems.cloud.entities.Booking;
+import be.kuleuven.distributedsystems.cloud.entities.Seat;
 import be.kuleuven.distributedsystems.cloud.entities.Ticket;
 import com.google.api.core.ApiFuture;
-import com.google.cloud.firestore.DocumentReference;
-import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.FirestoreOptions;
-import com.google.cloud.firestore.WriteResult;
+import com.google.cloud.firestore.*;
 import com.google.cloud.pubsub.v1.AckReplyConsumer;
 import com.google.cloud.pubsub.v1.MessageReceiver;
 import com.google.cloud.pubsub.v1.Subscriber;
@@ -84,20 +82,53 @@ public class Worker {
         List<Ticket> tickets = new ArrayList<>();
         boolean null_ticket = false;
         for(var quote:quotesWrapper.getQuotes()){
+            if (quote.getCompany().equals( "Local Company")) {
+                ApiFuture<DocumentSnapshot> future = db.collection("shows").document(quote.getShowId().toString()).get();
+                DocumentSnapshot document = future.get();
+                ShowWrapperUpload tempShowWrapper = document.toObject(ShowWrapperUpload.class);
+                List<SeatWrapperExtended> tempSeatWrapper = tempShowWrapper.getSeats();
+
+                int i = 0;
+                for(var entry : tempSeatWrapper){
+                    if(entry.getSeatId().equals(quote.getSeatId().toString()) && entry.getAvailability()){
+                        tickets.add(new Ticket(quote.getCompany(),quote.getShowId(),UUID.fromString(entry.getSeatId()), UUID.randomUUID(), customer));
+                        Map<String,Object> updates = new HashMap<>();
+                        updates.put("availability",true);
+                        updates.put("name",entry.getName());
+                        updates.put("price",entry.getPrice());
+                        updates.put("seatId",entry.getSeatId());
+                        updates.put("time",entry.getTime());
+                        updates.put("type",entry.getType());
+                        DocumentReference docRef = db.collection("shows").document(quote.getShowId().toString());
+                        ApiFuture<WriteResult> arrayRm = docRef.update("seats",FieldValue.arrayRemove(updates));
+                        System.out.println("Update time : " + arrayRm.get());
+                        updates.put("availability",false);
+                        ApiFuture<WriteResult> arrayUnion = docRef.update("seats",FieldValue.arrayUnion(updates));
+                        System.out.println("Update time : " + arrayUnion.get());
+                    }
+                    else if (entry.getSeatId().equals(quote.getSeatId().toString()) && !entry.getAvailability()){
+                        tickets.add(null);
+                    }
+                    i++;
+                }
+
+            }
+            else{
+                tickets.add(webClientBuilder
+                        .baseUrl("https://" + quote.getCompany())
+                        .build()
+                        .put()
+                        .uri(uriBuilder -> uriBuilder
+                                .pathSegment("shows",quote.getShowId().toString(),"seats", quote.getSeatId().toString(), "ticket")
+                                .queryParam("customer",customer)
+                                .queryParam("key",API_KEY)
+                                .build())
+                        .retrieve()
+                        .bodyToMono(new ParameterizedTypeReference<Ticket>() {})
+                        .retry(3)
+                        .block());
+            }
             System.out.println("[createQuote:pushSubscriber] Quote show ID is : " + quote.getShowId());
-            tickets.add(webClientBuilder
-                    .baseUrl("https://" + quote.getCompany())
-                    .build()
-                    .put()
-                    .uri(uriBuilder -> uriBuilder
-                            .pathSegment("shows",quote.getShowId().toString(),"seats", quote.getSeatId().toString(), "ticket")
-                            .queryParam("customer",customer)
-                            .queryParam("key",API_KEY)
-                            .build())
-                    .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<Ticket>() {})
-                    .retry(3)
-                    .block());
         }
 
         for (var entry:tickets){

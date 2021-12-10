@@ -218,9 +218,10 @@ public class Model {
             List<SeatWrapperExtended> tempSeatWrapper = tempShowWrapper.getSeats();
             List<Seat> tempSeats = new ArrayList<>();
             for(var entry : tempSeatWrapper){
+//                System.out.println("Availability : " + entry.getAvailability());
                 if(entry.getTime().substring(0,entry.getTime().length()-3).equals(time.toString()) && entry.getAvailability()){
                     tempSeats.add(new Seat(company,showId,UUID.fromString(entry.getSeatId()), time, entry.getType(), entry.getName(), entry.getPrice()));
-                    System.out.println("The seat is : " + entry.getName() );
+//                    System.out.println("The seat is : " + entry.getName() );
                 }
             }
 
@@ -253,9 +254,6 @@ public class Model {
             List<SeatWrapperExtended> tempSeatWrapper = tempShowWrapper.getSeats();
 
             for(var entry : tempSeatWrapper){
-                System.out.println("The seat id is : " + entry.getSeatId());
-                System.out.println("The UUID is : " + seatId.toString());
-                System.out.println("The condition is : " + entry.getSeatId().equals(seatId.toString()));
                 if(entry.getSeatId().equals(seatId.toString())){
                     return new Seat(company,showId,UUID.fromString(entry.getSeatId()), LocalDateTime.parse(entry.getTime()), entry.getType(), entry.getName(), entry.getPrice());
                 }
