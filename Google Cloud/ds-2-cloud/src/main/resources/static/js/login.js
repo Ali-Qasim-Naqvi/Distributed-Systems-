@@ -6,7 +6,12 @@ if (location.hostname === "localhost") {
     }
 } else {
     // TODO: (level 2) replace with your own configuration
-    firebaseConfig = {}
+    firebaseConfig = {  apiKey: "AIzaSyAHT8-KjMG4v9gmpqveZQWvli-25d4MkWU",
+                          authDomain: "ds-booking-system.firebaseapp.com",
+                          projectId: "ds-booking-system",
+                          storageBucket: "ds-booking-system.appspot.com",
+                          messagingSenderId: "72467283480",
+                          appId: "1:72467283480:web:74d5a857c156be0375cd6d"};
 }
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();

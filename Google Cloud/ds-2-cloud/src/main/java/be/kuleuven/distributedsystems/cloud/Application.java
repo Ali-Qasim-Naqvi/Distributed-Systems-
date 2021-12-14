@@ -41,7 +41,7 @@ import java.util.Objects;
 public class Application {
 
     @Autowired String projectId;
-    private String topicId = "confirm-quote";
+    private String topicId = "DS-Cloud-2-Worker";
     private String subscriptionId = "confirm-quote-subscription";
     private String pushEndPoint = "http://localhost:8080/confirmQuote";
 //    private String pushEndPoint = "http://localhost:3000/messages";
@@ -97,14 +97,14 @@ public class Application {
         TopicAdminClient topicAdminClient = TopicAdminClient.create(TopicAdminSettings.newBuilder().setTransportChannelProvider(channelProvider).setCredentialsProvider(credentialsProvider).build());
         Topic topic = topicAdminClient.createTopic(topicName);
         // Create a publisher instance with default settings bound to the topic
-        SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create(SubscriptionAdminSettings.newBuilder().setTransportChannelProvider(channelProvider).setCredentialsProvider(credentialsProvider).build());
+        /*SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create(SubscriptionAdminSettings.newBuilder().setTransportChannelProvider(channelProvider).setCredentialsProvider(credentialsProvider).build());
         ProjectSubscriptionName subscriptionName = ProjectSubscriptionName.of(projectId, subscriptionId);
         PushConfig pushConfig = PushConfig.newBuilder().setPushEndpoint(pushEndPoint).build();
 
         // Create a push subscription with default acknowledgement deadline of 10 seconds.
         // Messages not successfully acknowledged within 10 seconds will get resent by the server.
         Subscription subscription = subscriptionAdminClient.createSubscription(subscriptionName, topicName, pushConfig, 60);
-        System.out.println("Created push subscription: " + subscription.getName());
+        System.out.println("Created push subscription: " + subscription.getName());*/
         return Publisher.newBuilder(topicName).setChannelProvider(channelProvider).setCredentialsProvider(credentialsProvider).build();
     }
 
