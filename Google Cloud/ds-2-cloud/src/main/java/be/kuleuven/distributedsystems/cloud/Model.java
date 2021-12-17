@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cglib.core.Local;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -95,7 +96,7 @@ public class Model {
 
     public String readFileAsString()throws Exception
     {
-        return new String(Files.readAllBytes(Paths.get("src/main/resources/data.json")));
+        return new String(new ClassPathResource("data.json").getInputStream().readAllBytes());
     }
 
     public UUID stringToUUID (String uuid){

@@ -16,6 +16,13 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
 import com.google.pubsub.v1.ProjectSubscriptionName;
 import com.google.pubsub.v1.PubsubMessage;
+import com.sendgrid.Method;
+import com.sendgrid.Request;
+import com.sendgrid.Response;
+import com.sendgrid.SendGrid;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
 import net.minidev.json.JSONObject;
 import net.minidev.json.JSONValue;
 
@@ -44,11 +51,7 @@ public class Worker {
 
 
     String API_KEY = "wCIoTqec6vGJijW2meeqSokanZuqOL";
-    @Autowired String projectId;
-    String topicId = "confirm-quote";
-    @Autowired public Worker (){
-        System.out.println("Just a message" );
-    }
+    @Autowired public Worker (){ }
     @Autowired Firestore db;
     @Autowired WebClient.Builder webClientBuilder;
     private final Gson gson = new Gson();
@@ -135,6 +138,7 @@ public class Worker {
             if (entry.getTicketId() == null) {
                 null_ticket = true;
                 tickets.remove(entry);
+                System.out.println("[createQuote:pushSubscriber] Null ticket found");
             }
         }
         if(null_ticket){
@@ -152,8 +156,25 @@ public class Worker {
                         .retry(3)
                         .block();
             }
+            Email from = new Email("daniel.hernandezlara@student.kuleuven.be");
+            String subject = "Booking failed";
+            Email to = new Email(customer);
+            Content content = new Content("text/plain", "Your booking with our booking system failed.");
+            Mail mail = new Mail(from, subject, to, content);
+
+            SendGrid sg = new SendGrid("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");
+            Request request = new Request();
+            try {
+                request.setMethod(Method.POST);
+                request.setEndpoint("mail/send");
+                request.setBody(mail.build());
+                Response response = sg.api(request);
+            } catch (IOException ex) {
+                throw ex;
+            }
             return ResponseEntity.status(201).build();
         }
+        System.out.println("[createQuote:pushSubscriber] Booking performed successfully");
         Booking tempBooking = new Booking(UUID.randomUUID(), LocalDateTime.now(),tickets,customer);
         BookingWrapper tempBooking2 = new BookingWrapper(UUID.randomUUID(),LocalDateTime.now(),tickets,customer);
         DocumentReference docRef = db.collection(tempBooking2.getCustomer()).document(tempBooking2.getId().toString());
@@ -166,6 +187,22 @@ public class Worker {
         System.out.println("Update time : " + result.get().getUpdateTime());
 
         bookings.add(tempBooking);
+    Email from = new Email("daniel.hernandezlara@student.kuleuven.be");
+    String subject = "Booking successful";
+    Email to = new Email(customer);
+    Content content = new Content("text/plain", "Your booking id " + tempBooking.getId().toString() + " with our booking system was successful.");
+    Mail mail = new Mail(from, subject, to, content);
+
+    SendGrid sg = new SendGrid("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");
+    Request request = new Request();
+            try {
+        request.setMethod(Method.POST);
+        request.setEndpoint("mail/send");
+        request.setBody(mail.build());
+        Response response = sg.api(request);
+    } catch (IOException ex) {
+        throw ex;
+    }
         return ResponseEntity.status(200).build();
     }
 }

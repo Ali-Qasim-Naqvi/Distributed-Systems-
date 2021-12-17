@@ -44,7 +44,7 @@ public class Application {
     private String topicId = "DS-Cloud-2-Worker";
     private String subscriptionId = "confirm-quote-subscription";
     private String pushEndPoint = "http://localhost:8080/confirmQuote";
-//    private String pushEndPoint = "http://localhost:3000/messages";
+
     @SuppressWarnings("unchecked")
     public static void main(String[] args) {
         System.setProperty("server.port", System.getenv().getOrDefault("PORT", "8080"));
@@ -64,7 +64,12 @@ public class Application {
 
     @Bean
     public String projectId() {
-        return "demo-distributed-systems-kul";
+        if(isProduction()){
+            return "ds-booking-system";
+        }
+        else{
+            return "demo-distributed-systems-kul";
+        }
     }
 
     /*
@@ -86,39 +91,57 @@ public class Application {
 
     @Bean
     public Publisher pubsubPublisher() throws IOException {
-        String hostport = "localhost:8083";
+        TopicName topicName = TopicName.of(projectId, topicId);
+        if(isProduction()){
+            return Publisher.newBuilder(topicName).build();
+        }
+        else{
+            String hostport = "localhost:8083";
         ManagedChannel channel = ManagedChannelBuilder.forTarget(hostport).usePlaintext().build();
 
         TransportChannelProvider channelProvider = FixedTransportChannelProvider.create(GrpcTransportChannel.create(channel));
         CredentialsProvider credentialsProvider = NoCredentialsProvider.create();
 
-        TopicName topicName = TopicName.of(projectId, topicId);
+
         Publisher publisher = null;
         TopicAdminClient topicAdminClient = TopicAdminClient.create(TopicAdminSettings.newBuilder().setTransportChannelProvider(channelProvider).setCredentialsProvider(credentialsProvider).build());
         Topic topic = topicAdminClient.createTopic(topicName);
         // Create a publisher instance with default settings bound to the topic
-        /*SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create(SubscriptionAdminSettings.newBuilder().setTransportChannelProvider(channelProvider).setCredentialsProvider(credentialsProvider).build());
+        SubscriptionAdminClient subscriptionAdminClient = SubscriptionAdminClient.create(SubscriptionAdminSettings.newBuilder().setTransportChannelProvider(channelProvider).setCredentialsProvider(credentialsProvider).build());
         ProjectSubscriptionName subscriptionName = ProjectSubscriptionName.of(projectId, subscriptionId);
         PushConfig pushConfig = PushConfig.newBuilder().setPushEndpoint(pushEndPoint).build();
 
         // Create a push subscription with default acknowledgement deadline of 10 seconds.
         // Messages not successfully acknowledged within 10 seconds will get resent by the server.
         Subscription subscription = subscriptionAdminClient.createSubscription(subscriptionName, topicName, pushConfig, 60);
-        System.out.println("Created push subscription: " + subscription.getName());*/
+        System.out.println("Created push subscription: " + subscription.getName());
         return Publisher.newBuilder(topicName).setChannelProvider(channelProvider).setCredentialsProvider(credentialsProvider).build();
+        }
     }
 
     @Bean
     public Firestore firestoreInitializer() throws IOException {
-        CredentialsProvider credentialsProvider = NoCredentialsProvider.create();
-        FirestoreOptions firestoreOptions =
-                FirestoreOptions.getDefaultInstance().toBuilder()
-                        .setProjectId(projectId)
-                        .setEmulatorHost("localhost:8084")
-                        .setCredentials(new EmulatorCredentials())
-                        .setCredentialsProvider(FixedCredentialsProvider.create(new EmulatorCredentials()))
-                        .build();
-        Firestore db = firestoreOptions.getService();
-        return db;
+        if(isProduction()){
+            CredentialsProvider credentialsProvider = NoCredentialsProvider.create();
+            FirestoreOptions firestoreOptions =
+                    FirestoreOptions.getDefaultInstance().toBuilder()
+                            .setProjectId(projectId)
+                            .setCredentials(GoogleCredentials.getApplicationDefault())
+                            .build();
+            Firestore db = firestoreOptions.getService();
+            return db;
+        }
+        else {
+            CredentialsProvider credentialsProvider = NoCredentialsProvider.create();
+            FirestoreOptions firestoreOptions =
+                    FirestoreOptions.getDefaultInstance().toBuilder()
+                            .setProjectId(projectId)
+                            .setEmulatorHost("localhost:8084")
+                            .setCredentials(new EmulatorCredentials())
+                            .setCredentialsProvider(FixedCredentialsProvider.create(new EmulatorCredentials()))
+                            .build();
+            Firestore db = firestoreOptions.getService();
+            return db;
+        }
     }
 }
